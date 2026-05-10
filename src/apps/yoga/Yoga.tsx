@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { storage } from '../../lib/storage'
 import PoseInfo from './PoseInfo'
+import AIDiagram from './AIDiagram'
 
 type Pose = {
   id: string
@@ -8,6 +9,7 @@ type Pose = {
   notes: string
   mastered: boolean
   createdAt: number
+  imageUrl?: string
 }
 
 const KEY = 'yoga:poses'
@@ -261,6 +263,11 @@ function PoseRow({
         {expanded && (
           <div className="flex flex-col gap-3 px-4 pb-4 pl-[60px]">
             <PoseInfo name={pose.name} />
+            <AIDiagram
+              poseName={pose.name}
+              imageUrl={pose.imageUrl}
+              onGenerated={(dataUrl) => onUpdate({ imageUrl: dataUrl })}
+            />
             <textarea
               value={pose.notes}
               onChange={(e) => onUpdate({ notes: e.target.value })}
