@@ -2,15 +2,22 @@ import { useEffect, useMemo, useState } from 'react'
 import { storage } from '../../lib/storage'
 import PoseInfo from './PoseInfo'
 import AIDiagram from './AIDiagram'
-import { catalog } from './catalog'
+import { catalog, type Difficulty } from './catalog'
 
 type Status = 'library' | 'learning' | 'mastered'
+type FilterDifficulty = 'All' | Difficulty
+
+const DIFFICULTY_ORDER: Record<Difficulty, number> = {
+  Beginner: 0,
+  Intermediate: 1,
+  Advanced: 2,
+}
 
 type Pose = {
   id: string
   name: string
-  sanskrit?: string
-  category?: string
+  difficulty?: Difficulty
+  benefits?: string
   status: Status
   notes: string
   imageUrl?: string
@@ -62,21 +69,22 @@ function loadState(): Pose[] {
   }
 
   for (const entry of catalog) {
-    if (!map.has(entry.id)) {
+    const existing = map.get(entry.id)
+    if (!existing) {
       map.set(entry.id, {
         id: entry.id,
         name: entry.name,
-        sanskrit: entry.sanskrit,
-        category: entry.category,
+        difficulty: entry.difficulty,
+        benefits: entry.benefits,
         status: 'library',
         notes: '',
         isCustom: false,
         createdAt: 0,
       })
     } else {
-      const existing = map.get(entry.id)!
-      if (!existing.sanskrit) existing.sanskrit = entry.sanskrit
-      if (!existing.category) existing.category = entry.category
+      existing.name = entry.name
+      existing.difficulty = entry.difficulty
+      existing.benefits = entry.benefits
     }
   }
 
@@ -87,12 +95,16 @@ function saveState(poses: Pose[]) {
   storage.set(KEY, JSON.stringify(poses))
 }
 
+function difficultyRank(p: Pose): number {
+  return p.difficulty ? DIFFICULTY_ORDER[p.difficulty] : 99
+}
+
 export default function Yoga() {
   const [poses, setPoses] = useState<Pose[]>(() => loadState())
   const [draft, setDraft] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [librarySearch, setLibrarySearch] = useState('')
-  const [libraryCategory, setLibraryCategory] = useState<string>('All')
+  const [filter, setFilter] = useState<FilterDifficulty>('All')
 
   useEffect(() => {
     saveState(poses)
@@ -127,28 +139,45 @@ export default function Yoga() {
     if (expandedId === pose.id) setExpandedId(null)
   }
 
-  const learning = poses.filter((p) => p.status === 'learning')
-  const mastered = poses.filter((p) => p.status === 'mastered')
-  const library = poses.filter((p) => p.status === 'library')
-
-  const categories = useMemo(() => {
-    const set = new Set<string>()
-    for (const p of library) if (p.category) set.add(p.category)
-    return ['All', ...Array.from(set).sort()]
-  }, [library])
+  const learning = useMemo(
+    () =>
+      poses
+        .filter((p) => p.status === 'learning')
+        .sort((a, b) => difficultyRank(a) - difficultyRank(b)),
+    [poses],
+  )
+  const mastered = useMemo(
+    () =>
+      poses
+        .filter((p) => p.status === 'mastered')
+        .sort((a, b) => difficultyRank(a) - difficultyRank(b)),
+    [poses],
+  )
+  const library = useMemo(
+    () =>
+      poses
+        .filter((p) => p.status === 'library')
+        .sort((a, b) => {
+          const d = difficultyRank(a) - difficultyRank(b)
+          if (d !== 0) return d
+          return a.name.localeCompare(b.name)
+        }),
+    [poses],
+  )
 
   const filteredLibrary = useMemo(() => {
     const q = librarySearch.trim().toLowerCase()
     return library.filter((p) => {
-      if (libraryCategory !== 'All' && p.category !== libraryCategory) return false
+      if (filter !== 'All' && p.difficulty !== filter) return false
       if (!q) return true
       return (
         p.name.toLowerCase().includes(q) ||
-        p.sanskrit?.toLowerCase().includes(q) ||
-        p.category?.toLowerCase().includes(q)
+        p.benefits?.toLowerCase().includes(q)
       )
     })
-  }, [library, librarySearch, libraryCategory])
+  }, [library, librarySearch, filter])
+
+  const filters: FilterDifficulty[] = ['All', 'Beginner', 'Intermediate', 'Advanced']
 
   return (
     <div className="flex flex-col gap-6">
@@ -225,21 +254,21 @@ export default function Yoga() {
               type="search"
               value={librarySearch}
               onChange={(e) => setLibrarySearch(e.target.value)}
-              placeholder="Search library…"
+              placeholder="Search by name or benefit…"
               className="w-full rounded-xl bg-slate-200/70 px-3 py-2 text-[15px] outline-none placeholder:text-slate-500"
             />
             <div className="flex flex-wrap gap-1.5">
-              {categories.map((c) => (
+              {filters.map((f) => (
                 <button
-                  key={c}
-                  onClick={() => setLibraryCategory(c)}
+                  key={f}
+                  onClick={() => setFilter(f)}
                   className={`rounded-full px-3 py-1 text-[12px] font-semibold transition ${
-                    libraryCategory === c
+                    filter === f
                       ? 'bg-slate-900 text-white'
                       : 'bg-slate-200/70 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  {c}
+                  {f}
                 </button>
               ))}
             </div>
@@ -315,6 +344,22 @@ function Section({
   )
 }
 
+function DifficultyBadge({ difficulty }: { difficulty?: Difficulty }) {
+  if (!difficulty) return null
+  const tone = {
+    Beginner: 'bg-emerald-100 text-emerald-700',
+    Intermediate: 'bg-amber-100 text-amber-700',
+    Advanced: 'bg-rose-100 text-rose-700',
+  }[difficulty]
+  return (
+    <span
+      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${tone}`}
+    >
+      {difficulty}
+    </span>
+  )
+}
+
 function StatusAction({
   status,
   onStartPracticing,
@@ -328,7 +373,7 @@ function StatusAction({
     return (
       <button
         onClick={onStartPracticing}
-        className="rounded-full bg-[#0071e3] px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#0064cc]"
+        className="shrink-0 rounded-full bg-[#0071e3] px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white transition hover:bg-[#0064cc]"
       >
         Practice
       </button>
@@ -375,15 +420,14 @@ function PoseRow({
   onRemoveOrReset: () => void
   isLast: boolean
 }) {
+  const subtitle =
+    !expanded && pose.notes ? pose.notes : pose.benefits ?? ''
+
   return (
     <>
       <div className={expanded ? 'bg-slate-50' : ''}>
         <div className="flex items-center gap-3 px-4 py-3">
-          {pose.status === 'library' ? (
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-500">
-              {pose.category?.[0] ?? '·'}
-            </div>
-          ) : (
+          {pose.status !== 'library' && (
             <StatusAction
               status={pose.status}
               onStartPracticing={() => onUpdate({ status: 'learning' })}
@@ -399,19 +443,23 @@ function PoseRow({
             onClick={onToggleExpand}
             className="min-w-0 flex-1 text-left"
           >
-            <p
-              className={`truncate text-[15px] font-semibold ${
-                pose.status === 'mastered'
-                  ? 'text-slate-500 line-through'
-                  : 'text-slate-900'
-              }`}
-            >
-              {pose.name}
-            </p>
-            <p className="truncate text-[12px] text-slate-500">
-              {pose.sanskrit ||
-                (!expanded && pose.notes ? pose.notes : pose.category ?? '')}
-            </p>
+            <div className="flex items-center gap-2">
+              <p
+                className={`truncate text-[15px] font-semibold ${
+                  pose.status === 'mastered'
+                    ? 'text-slate-500 line-through'
+                    : 'text-slate-900'
+                }`}
+              >
+                {pose.name}
+              </p>
+              {pose.status === 'library' && (
+                <DifficultyBadge difficulty={pose.difficulty} />
+              )}
+            </div>
+            {subtitle && (
+              <p className="truncate text-[12px] text-slate-500">{subtitle}</p>
+            )}
           </button>
 
           {pose.status === 'library' && (
@@ -444,16 +492,22 @@ function PoseRow({
 
         {expanded && (
           <div className="flex flex-col gap-3 px-4 pb-4 pl-[60px]">
-            <PoseInfo name={pose.sanskrit ?? pose.name} />
+            {pose.benefits && (
+              <div className="rounded-lg bg-slate-100 px-3 py-2 text-[13px] text-slate-700">
+                <span className="font-semibold">Physical benefits — </span>
+                {pose.benefits}
+              </div>
+            )}
+            <PoseInfo name={pose.name} />
             <AIDiagram
-              poseName={pose.sanskrit ?? pose.name}
+              poseName={pose.name}
               imageUrl={pose.imageUrl}
               onGenerated={(dataUrl) => onUpdate({ imageUrl: dataUrl })}
             />
             <textarea
               value={pose.notes}
               onChange={(e) => onUpdate({ notes: e.target.value })}
-              placeholder="Notes — alignment cues, breath, what you're working on…"
+              placeholder="Notes — what you're working on, cues, breath…"
               className="min-h-[80px] w-full resize-none rounded-lg border border-slate-200 bg-white p-2 text-[14px] outline-none transition focus:border-[#0071e3]"
             />
             <button
