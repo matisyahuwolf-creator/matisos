@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { storage } from '../../lib/storage'
 import PoseInfo from './PoseInfo'
 import AIDiagram from './AIDiagram'
+import SessionsView from './SessionsView'
 import { catalog, type Difficulty } from './catalog'
 
 type Status = 'library' | 'learning' | 'mastered'
@@ -186,6 +187,8 @@ export default function Yoga() {
         <Stat value={mastered.length} label="Mastered" tone="emerald" />
         <Stat value={library.length} label="In Library" tone="slate" />
       </div>
+
+      <SessionsView />
 
       <div className="flex gap-2">
         <input

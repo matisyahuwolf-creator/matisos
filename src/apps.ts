@@ -20,9 +20,9 @@ export const apps: AppEntry[] = [
     kind: 'internal',
     slug: 'yoga',
     name: 'Yoga',
-    tagline: 'Practice & Mastery',
+    tagline: 'Stress Release & Recovery',
     description:
-      'Track the poses you’re learning, the ones you’ve mastered, and the notes you need to remember next time on the mat.',
+      'Guided sessions and a curated pose library focused on stress release, trauma-informed practice, and physical recovery.',
     icon: '🧘',
     status: 'live',
     gradient: 'from-emerald-400 via-teal-500 to-cyan-600',
