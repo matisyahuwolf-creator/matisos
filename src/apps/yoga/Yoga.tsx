@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { storage } from '../../lib/storage'
+import PoseInfo from './PoseInfo'
 
 type Pose = {
   id: string
@@ -258,7 +259,8 @@ function PoseRow({
         </div>
 
         {expanded && (
-          <div className="flex flex-col gap-2 px-4 pb-4 pl-[60px]">
+          <div className="flex flex-col gap-3 px-4 pb-4 pl-[60px]">
+            <PoseInfo name={pose.name} />
             <textarea
               value={pose.notes}
               onChange={(e) => onUpdate({ notes: e.target.value })}
