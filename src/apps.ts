@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import Scratch from './apps/scratch/Scratch'
+import Yoga from './apps/yoga/Yoga'
 
 type BaseEntry = {
   name: string
@@ -15,6 +16,18 @@ export type AppEntry =
   | (BaseEntry & { kind: 'external'; url: string })
 
 export const apps: AppEntry[] = [
+  {
+    kind: 'internal',
+    slug: 'yoga',
+    name: 'Yoga',
+    tagline: 'Practice & Mastery',
+    description:
+      'Track the poses you’re learning, the ones you’ve mastered, and the notes you need to remember next time on the mat.',
+    icon: '🧘',
+    status: 'live',
+    gradient: 'from-emerald-400 via-teal-500 to-cyan-600',
+    component: Yoga,
+  },
   {
     kind: 'internal',
     slug: 'scratch',
