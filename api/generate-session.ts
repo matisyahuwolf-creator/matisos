@@ -44,7 +44,7 @@ export default async function handler(
     )
     .join('\n')
 
-  const prompt = `You are a calm, supportive yoga coach. Generate a custom session based on the user's mood.
+  const prompt = `You are a calm, supportive yoga coach who teaches WHY each pose matters. The user wants to see the reasoning behind the sequence — the physical and mental effect of each pose, and how the flow builds toward their goal.
 
 Available poses (use these EXACT ids — do not invent any):
 ${poseList}
@@ -52,9 +52,16 @@ ${poseList}
 Return ONLY a JSON object in this exact shape:
 {
   "name": "Short session name (3-6 words)",
-  "description": "2-3 sentence description of what this session does and why it fits.",
+  "description": "2-3 sentence description of what this session does and how it serves the user's mood.",
+  "arc": "1-2 sentences describing the OVERALL STRATEGY of the sequence — how the flow progresses (e.g. grounding → activation → peak → cool-down) and what physiological or mental shift the user should expect by the end.",
   "steps": [
-    { "poseId": "exact-id-from-list", "durationSec": 60, "cue": "Brief calm instruction.", "perSide": false }
+    {
+      "poseId": "exact-id-from-list",
+      "durationSec": 60,
+      "perSide": false,
+      "cue": "Brief calm instruction (1 sentence).",
+      "rationale": "1-2 concise sentences explaining: (a) what this pose does physically (muscles stretched/strengthened, nervous system effect), (b) what it does mentally/emotionally, (c) why it's placed here in the flow and how it serves the user's specific goal."
+    }
   ]
 }
 
@@ -62,10 +69,12 @@ Rules:
 - Use ONLY pose IDs from the list above (exact match)
 - 5-12 steps total
 - Hold durations: 30-180 seconds
-- Include a grounding pose at the start and a closing pose (corpse, child, or legs-up-wall) at the end
+- Include a grounding pose at the start and a closing/restorative pose (corpse, child, legs-up-wall) at the end
 - Use "perSide": true ONLY for bilateral poses (pigeon, lunges, twists, warriors)
-- Cues are calm, present-tense; never prescriptive
-- Default to Beginner poses
+- Cues are calm, present-tense ("Notice the breath", "Feel the ground"), never prescriptive
+- Rationales should be specific and physiological — actual muscles, nerves, body systems. Avoid vague language like "feels good"; explain WHY it works
+- Default to Beginner poses unless user wants challenge
+- Match energy to user state: shorter if overwhelmed, gentle wake-up if tired, energizing if low
 
 User's current state: ${message}`
 
@@ -80,7 +89,7 @@ User's current state: ${message}`
         generationConfig: {
           responseMimeType: 'application/json',
           temperature: 0.7,
-          maxOutputTokens: 4096,
+          maxOutputTokens: 6000,
         },
       }),
     })
@@ -110,10 +119,12 @@ User's current state: ${message}`
       | {
           name?: string
           description?: string
+          arc?: string
           steps?: Array<{
             poseId?: string
             durationSec?: number
             cue?: string
+            rationale?: string
             perSide?: boolean
           }>
         }
@@ -131,7 +142,12 @@ User's current state: ${message}`
       }
     }
 
-    if (!parsed || !parsed.name || !parsed.description || !Array.isArray(parsed.steps)) {
+    if (
+      !parsed ||
+      !parsed.name ||
+      !parsed.description ||
+      !Array.isArray(parsed.steps)
+    ) {
       res.status(502).json({
         error:
           'Model output invalid or missing fields. Got: ' +
@@ -153,6 +169,8 @@ User's current state: ${message}`
             ? Math.max(15, Math.min(300, Math.round(s.durationSec)))
             : 60,
         cue: typeof s.cue === 'string' ? s.cue : undefined,
+        rationale:
+          typeof s.rationale === 'string' ? s.rationale : undefined,
         perSide: s.perSide === true,
       }))
 
@@ -166,6 +184,7 @@ User's current state: ${message}`
     res.status(200).json({
       name: parsed.name,
       description: parsed.description,
+      arc: typeof parsed.arc === 'string' ? parsed.arc : undefined,
       steps: cleanSteps,
     })
   } catch (err) {

@@ -3,10 +3,13 @@ import { catalog } from './catalog'
 import SessionRunner from './SessionRunner'
 import type { Session, SessionStep } from './sessions'
 
+type GeneratedStep = SessionStep & { rationale?: string }
+
 type GeneratedSession = {
   name: string
   description: string
-  steps: SessionStep[]
+  arc?: string
+  steps: GeneratedStep[]
 }
 
 type Message =
@@ -243,26 +246,49 @@ function GeneratedCard({
           ▶ Start session
         </button>
       </div>
-      <ol className="max-h-72 divide-y divide-slate-100 overflow-y-auto">
+
+      {session.arc && (
+        <div className="border-b border-slate-100 bg-violet-50/40 px-5 py-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-violet-700">
+            The arc
+          </p>
+          <p className="mt-1 text-[13px] leading-relaxed text-slate-700">
+            {session.arc}
+          </p>
+        </div>
+      )}
+
+      <ol className="divide-y divide-slate-100">
         {session.steps.map((step, i) => (
-          <li key={i} className="flex gap-3 px-4 py-2.5">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-700">
-              {i + 1}
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="truncate text-[14px] font-semibold text-slate-900">
-                  {poseName(step.poseId)}
-                </p>
-                <p className="shrink-0 text-[11px] font-medium text-slate-500">
-                  {step.durationSec}s{step.perSide ? ' / side' : ''}
-                </p>
+          <li key={i} className="px-5 py-4">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[12px] font-bold text-slate-700">
+                {i + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="truncate text-[15px] font-semibold text-slate-900">
+                    {poseName(step.poseId)}
+                  </p>
+                  <p className="shrink-0 text-[11px] font-medium text-slate-500">
+                    {step.durationSec}s{step.perSide ? ' / side' : ''}
+                  </p>
+                </div>
+                {step.cue && (
+                  <p className="mt-1 text-[12px] leading-snug text-slate-600">
+                    <span className="font-semibold text-slate-700">Cue · </span>
+                    {step.cue}
+                  </p>
+                )}
+                {step.rationale && (
+                  <p className="mt-2 rounded-lg bg-amber-50/70 px-2.5 py-1.5 text-[12px] leading-snug text-slate-700">
+                    <span className="font-semibold text-amber-800">
+                      Why ·{' '}
+                    </span>
+                    {step.rationale}
+                  </p>
+                )}
               </div>
-              {step.cue && (
-                <p className="text-[12px] leading-snug text-slate-600">
-                  {step.cue}
-                </p>
-              )}
             </div>
           </li>
         ))}
