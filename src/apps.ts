@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react'
+import Pardes from './apps/pardes/Pardes'
 import Scratch from './apps/scratch/Scratch'
 import Yoga from './apps/yoga/Yoga'
 
@@ -17,6 +18,19 @@ export type AppEntry =
   | (BaseEntry & { kind: 'external'; url: string })
 
 export const apps: AppEntry[] = [
+  {
+    kind: 'internal',
+    slug: 'pardes',
+    name: 'Pardes',
+    tagline: 'Mystical Meditation',
+    description:
+      'A psychedelic journey through the ten Sefirot. Hebrew letters, color, and breath drawn from Kabbalistic tradition.',
+    icon: '🌌',
+    status: 'live',
+    gradient: 'from-violet-600 via-fuchsia-600 to-orange-500',
+    category: 'Wellness',
+    component: Pardes,
+  },
   {
     kind: 'internal',
     slug: 'yoga',

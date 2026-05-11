@@ -32,3 +32,18 @@ body {
 @utility animate-fade-up {
   animation: fadeUp 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
+
+@keyframes pardesShift {
+  0% {
+    transform: rotate(0deg) scale(1);
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.15);
+    filter: hue-rotate(30deg);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    filter: hue-rotate(0deg);
+  }
+}
