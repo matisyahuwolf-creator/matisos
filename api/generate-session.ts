@@ -1,48 +1,47 @@
-export const maxDuration = 60
-export const config = {
-  maxDuration: 60,
-}
+import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 type PoseInfo = { id: string; name: string; difficulty?: string }
 
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse,
+) {
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    res.status(405).json({ error: 'Method not allowed' })
+    return
   }
 
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
-    return Response.json(
-      {
-        error:
-          'GEMINI_API_KEY env var is missing on the server. Add it in Vercel → Settings → Environment Variables and redeploy.',
-      },
-      { status: 500 },
-    )
+    res.status(500).json({
+      error:
+        'GEMINI_API_KEY env var is missing. Add it in Vercel → Settings → Environment Variables and redeploy.',
+    })
+    return
   }
 
-  let body: { message?: string; poses?: PoseInfo[] }
-  try {
-    body = await req.json()
-  } catch {
-    return Response.json({ error: 'Invalid JSON' }, { status: 400 })
-  }
-
-  const message = body.message?.trim()
-  const poses = body.poses ?? []
+  const message: string | undefined =
+    typeof req.body?.message === 'string'
+      ? req.body.message.trim()
+      : undefined
+  const poses: PoseInfo[] = Array.isArray(req.body?.poses)
+    ? req.body.poses
+    : []
 
   if (!message) {
-    return Response.json({ error: 'message required' }, { status: 400 })
+    res.status(400).json({ error: 'message required' })
+    return
   }
   if (poses.length === 0) {
-    return Response.json({ error: 'poses list required' }, { status: 400 })
+    res.status(400).json({ error: 'poses list required' })
+    return
   }
 
   const poseList = poses
-    .map((p) => `- ${p.id}: ${p.name}${p.difficulty ? ` (${p.difficulty})` : ''}`)
+    .map(
+      (p) =>
+        `- ${p.id}: ${p.name}${p.difficulty ? ` (${p.difficulty})` : ''}`,
+    )
     .join('\n')
 
   const prompt = `You are a calm, supportive yoga coach. Generate a custom session based on the user's mood.
@@ -65,19 +64,15 @@ Rules:
 - Hold durations: 30-180 seconds
 - Include a grounding pose at the start and a closing pose (corpse, child, or legs-up-wall) at the end
 - Use "perSide": true ONLY for bilateral poses (pigeon, lunges, twists, warriors)
-- Cues are calm, present-tense ("Notice the breath", "Feel the ground"), never prescriptive
-- Default to Beginner poses unless user wants challenge
-- Match the energy: shorter session if overwhelmed; gentle wake-up if tired
+- Cues are calm, present-tense; never prescriptive
+- Default to Beginner poses
 
 User's current state: ${message}`
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 25_000)
-
   try {
-    const res = await fetch(url, {
+    const geminiRes = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -88,38 +83,41 @@ User's current state: ${message}`
           maxOutputTokens: 1000,
         },
       }),
-      signal: controller.signal,
     })
-    clearTimeout(timeoutId)
 
-    if (!res.ok) {
-      const errText = await res.text()
-      return Response.json(
-        { error: `Gemini API ${res.status}: ${errText.slice(0, 300)}` },
-        { status: 500 },
-      )
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text()
+      res.status(500).json({
+        error: `Gemini API ${geminiRes.status}: ${errText.slice(0, 300)}`,
+      })
+      return
     }
 
-    const data = await res.json()
+    const data = await geminiRes.json()
     const text: string | undefined =
       data?.candidates?.[0]?.content?.parts?.[0]?.text
+
     if (!text) {
-      return Response.json(
-        { error: 'Gemini returned no text. Response: ' + JSON.stringify(data).slice(0, 200) },
-        { status: 502 },
-      )
+      res.status(502).json({
+        error:
+          'Gemini returned no text. Response: ' +
+          JSON.stringify(data).slice(0, 200),
+      })
+      return
     }
 
-    let parsed: {
-      name?: string
-      description?: string
-      steps?: Array<{
-        poseId?: string
-        durationSec?: number
-        cue?: string
-        perSide?: boolean
-      }>
-    }
+    let parsed:
+      | {
+          name?: string
+          description?: string
+          steps?: Array<{
+            poseId?: string
+            durationSec?: number
+            cue?: string
+            perSide?: boolean
+          }>
+        }
+      | null = null
     try {
       parsed = JSON.parse(text)
     } catch {
@@ -128,28 +126,16 @@ User's current state: ${message}`
         try {
           parsed = JSON.parse(match[1])
         } catch {
-          return Response.json(
-            { error: 'Model output was not valid JSON' },
-            { status: 502 },
-          )
+          /* fall through */
         }
-      } else {
-        return Response.json(
-          { error: 'Model output was not valid JSON' },
-          { status: 502 },
-        )
       }
     }
 
-    if (
-      !parsed.name ||
-      !parsed.description ||
-      !Array.isArray(parsed.steps)
-    ) {
-      return Response.json(
-        { error: 'Model response missing required fields' },
-        { status: 502 },
-      )
+    if (!parsed || !parsed.name || !parsed.description || !Array.isArray(parsed.steps)) {
+      res
+        .status(502)
+        .json({ error: 'Model output was not valid JSON or missing fields' })
+      return
     }
 
     const validIds = new Set(poses.map((p) => p.id))
@@ -169,25 +155,19 @@ User's current state: ${message}`
       }))
 
     if (cleanSteps.length === 0) {
-      return Response.json(
-        { error: 'Generated session had no valid poses' },
-        { status: 502 },
-      )
+      res
+        .status(502)
+        .json({ error: 'Generated session had no valid poses from the catalog' })
+      return
     }
 
-    return Response.json({
+    res.status(200).json({
       name: parsed.name,
       description: parsed.description,
       steps: cleanSteps,
     })
   } catch (err) {
-    clearTimeout(timeoutId)
-    const isAbort = err instanceof Error && err.name === 'AbortError'
-    const errMsg = isAbort
-      ? 'Gemini API call timed out after 25s'
-      : err instanceof Error
-        ? err.message
-        : 'Unknown error'
-    return Response.json({ error: errMsg }, { status: 500 })
+    const errMsg = err instanceof Error ? err.message : 'Unknown error'
+    res.status(500).json({ error: errMsg })
   }
 }

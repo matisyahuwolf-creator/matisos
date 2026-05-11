@@ -1,49 +1,69 @@
-import OpenAI from 'openai'
+import type { VercelRequest, VercelResponse } from '@vercel/node'
 
-const client = new OpenAI()
-
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse,
+) {
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    res.status(405).json({ error: 'Method not allowed' })
+    return
   }
 
-  let poseName: string | undefined
-  try {
-    const body = await req.json()
-    poseName = typeof body?.poseName === 'string' ? body.poseName.trim() : ''
-  } catch {
-    return Response.json({ error: 'Invalid JSON body' }, { status: 400 })
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    res.status(500).json({
+      error:
+        'OPENAI_API_KEY env var is missing. Add it in Vercel → Settings → Environment Variables to use AI image generation.',
+    })
+    return
   }
+
+  const poseName: string | undefined =
+    typeof req.body?.poseName === 'string'
+      ? req.body.poseName.trim()
+      : undefined
 
   if (!poseName) {
-    return Response.json({ error: 'poseName is required' }, { status: 400 })
+    res.status(400).json({ error: 'poseName is required' })
+    return
   }
 
   const prompt = `A clean minimalist black-ink line drawing illustration of a single person performing the yoga pose "${poseName}". Pure white background. Three-quarter or side view. Simple instructional textbook diagram style — only black line strokes, no shading, no color, no gradients. Anatomically correct posture with proper alignment. Whole body visible, figure centered with generous whitespace around it. No text, no labels, no decorative elements.`
 
   try {
-    const result = await client.images.generate({
-      model: 'gpt-image-1',
-      prompt,
-      size: '1024x1024',
-      quality: 'low',
-      n: 1,
+    const apiRes = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-image-1',
+        prompt,
+        size: '1024x1024',
+        quality: 'low',
+        n: 1,
+      }),
     })
 
-    const b64 = result.data?.[0]?.b64_json
-    if (!b64) {
-      return Response.json(
-        { error: 'No image returned from model' },
-        { status: 502 },
-      )
+    if (!apiRes.ok) {
+      const errText = await apiRes.text()
+      res.status(apiRes.status).json({
+        error: `OpenAI API ${apiRes.status}: ${errText.slice(0, 300)}`,
+      })
+      return
     }
 
-    return Response.json({ dataUrl: `data:image/png;base64,${b64}` })
+    const data = await apiRes.json()
+    const b64: string | undefined = data?.data?.[0]?.b64_json
+    if (!b64) {
+      res.status(502).json({ error: 'No image returned from model' })
+      return
+    }
+
+    res.status(200).json({ dataUrl: `data:image/png;base64,${b64}` })
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Image generation failed'
-    return Response.json({ error: message }, { status: 500 })
+    const errMsg = err instanceof Error ? err.message : 'Image generation failed'
+    res.status(500).json({ error: errMsg })
   }
 }
