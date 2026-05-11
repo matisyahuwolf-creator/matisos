@@ -117,7 +117,6 @@ export default function Coach() {
     const trimmed = text.trim()
     if (!trimmed || loading) return
 
-    setHistory((prev) => [...prev, { role: 'user', text: trimmed }])
     setLoading(true)
 
     const controller = new AbortController()

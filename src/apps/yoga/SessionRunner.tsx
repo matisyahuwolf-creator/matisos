@@ -77,6 +77,24 @@ function poseName(id: string): string {
   return catalog.find((p) => p.id === id)?.name ?? id
 }
 
+const STEP_GRADIENTS = [
+  'from-violet-600 via-fuchsia-500 to-rose-600',
+  'from-sky-500 via-cyan-500 to-emerald-500',
+  'from-amber-500 via-orange-500 to-rose-500',
+  'from-emerald-600 via-teal-600 to-cyan-700',
+  'from-indigo-700 via-purple-600 to-pink-600',
+  'from-slate-700 via-blue-700 to-indigo-800',
+  'from-rose-500 via-pink-500 to-fuchsia-600',
+  'from-yellow-500 via-amber-500 to-orange-600',
+  'from-purple-700 via-violet-700 to-fuchsia-800',
+  'from-cyan-600 via-blue-600 to-indigo-700',
+  'from-orange-600 via-red-600 to-pink-700',
+  'from-green-600 via-emerald-600 to-teal-700',
+]
+
+// A minor pentatonic scale, low octave — meditative and consonant
+const STEP_FREQUENCIES = [110, 130.81, 146.83, 164.81, 196, 220, 246.94]
+
 type FlatStep = SessionStep & { side?: 1 | 2; totalSides: number }
 
 function flatten(session: Session): FlatStep[] {
@@ -285,6 +303,32 @@ export default function SessionRunner({
   }, [musicEnabled, paused, isComplete])
 
   useEffect(() => {
+    const drone = droneRef.current
+    const ctx = audioCtxRef.current
+    if (!drone || !ctx) return
+    const fundamental = STEP_FREQUENCIES[index % STEP_FREQUENCIES.length]
+    const now = ctx.currentTime
+    const rampTime = 2.5
+    const targets: [OscillatorNode, number][] = [
+      [drone.osc1, fundamental],
+      [drone.osc2, fundamental * 1.5],
+      [drone.osc3, fundamental * 2],
+    ]
+    for (const [osc, target] of targets) {
+      try {
+        osc.frequency.cancelScheduledValues(now)
+        osc.frequency.setValueAtTime(osc.frequency.value, now)
+        osc.frequency.exponentialRampToValueAtTime(
+          Math.max(20, target),
+          now + rampTime,
+        )
+      } catch {
+        // ignored
+      }
+    }
+  }, [index])
+
+  useEffect(() => {
     if (paused || isComplete) return
     if (remaining > 0) {
       const id = setTimeout(() => setRemaining((r) => r - 1), 1000)
@@ -350,9 +394,13 @@ export default function SessionRunner({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white overflow-hidden">
-      <div
-        className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${session.gradient} opacity-25`}
-      />
+      {flat.map((_, i) => (
+        <div
+          key={i}
+          className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${STEP_GRADIENTS[i % STEP_GRADIENTS.length]} transition-opacity duration-[2500ms] ease-out`}
+          style={{ opacity: index === i && !isComplete ? 0.38 : 0 }}
+        />
+      ))}
       <div
         className="pointer-events-none absolute inset-0 opacity-40"
         style={{
