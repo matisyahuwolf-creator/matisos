@@ -4,6 +4,7 @@ import PoseInfo from './PoseInfo'
 import AIDiagram from './AIDiagram'
 import SessionsView from './SessionsView'
 import TracksView from './TracksView'
+import Today, { type TabKey } from './Today'
 import { catalog, type Difficulty } from './catalog'
 
 type Status = 'library' | 'learning' | 'mastered'
@@ -180,38 +181,48 @@ export default function Yoga() {
   }, [library, librarySearch, filter])
 
   const filters: FilterDifficulty[] = ['All', 'Beginner', 'Intermediate', 'Advanced']
+  const [tab, setTab] = useState<TabKey>('today')
 
   return (
-    <div className="flex flex-col gap-6">
-      <TracksView />
+    <div className="flex flex-col gap-5">
+      <TabBar value={tab} onChange={setTab} />
 
-      <div className="grid grid-cols-3 gap-2">
-        <Stat value={learning.length} label="Working on" tone="amber" />
-        <Stat value={mastered.length} label="Mastered" tone="emerald" />
-        <Stat value={library.length} label="In Library" tone="slate" />
-      </div>
-
-      <SessionsView />
-
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') addCustomPose()
+      {tab === 'today' && (
+        <Today
+          stats={{
+            working: learning.length,
+            mastered: mastered.length,
+            library: library.length,
           }}
-          placeholder="Add a custom pose…"
-          className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[15px] outline-none transition focus:border-[#0071e3]"
+          onSwitchTab={setTab}
         />
-        <button
-          onClick={addCustomPose}
-          disabled={!draft.trim()}
-          className="rounded-xl bg-[#0071e3] px-4 py-2 text-[15px] font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-slate-300"
-        >
-          Add
-        </button>
-      </div>
+      )}
+
+      {tab === 'programs' && <TracksView />}
+
+      {tab === 'sessions' && <SessionsView />}
+
+      {tab === 'library' && (
+        <div className="flex flex-col gap-6">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') addCustomPose()
+              }}
+              placeholder="Add a custom pose…"
+              className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[15px] outline-none transition focus:border-[#0071e3]"
+            />
+            <button
+              onClick={addCustomPose}
+              disabled={!draft.trim()}
+              className="rounded-xl bg-[#0071e3] px-4 py-2 text-[15px] font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              Add
+            </button>
+          </div>
 
       {learning.length > 0 && (
         <Section title={`Working on · ${learning.length}`}>
@@ -303,30 +314,41 @@ export default function Yoga() {
           )}
         </section>
       )}
+        </div>
+      )}
     </div>
   )
 }
 
-function Stat({
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'today', label: 'Today' },
+  { key: 'programs', label: 'Programs' },
+  { key: 'sessions', label: 'Sessions' },
+  { key: 'library', label: 'Library' },
+]
+
+function TabBar({
   value,
-  label,
-  tone,
+  onChange,
 }: {
-  value: number
-  label: string
-  tone: 'slate' | 'amber' | 'emerald'
+  value: TabKey
+  onChange: (k: TabKey) => void
 }) {
-  const tones = {
-    slate: 'bg-slate-100 text-slate-700',
-    amber: 'bg-amber-100 text-amber-800',
-    emerald: 'bg-emerald-100 text-emerald-800',
-  }
   return (
-    <div className={`rounded-xl px-3 py-3 text-center ${tones[tone]}`}>
-      <div className="text-2xl font-bold leading-none">{value}</div>
-      <div className="mt-1 text-[10px] font-semibold uppercase tracking-wider">
-        {label}
-      </div>
+    <div className="flex gap-1 rounded-full bg-slate-200/70 p-1">
+      {TABS.map((t) => (
+        <button
+          key={t.key}
+          onClick={() => onChange(t.key)}
+          className={`flex-1 rounded-full px-3 py-1.5 text-[13px] font-semibold transition ${
+            value === t.key
+              ? 'bg-white text-slate-900 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
     </div>
   )
 }
