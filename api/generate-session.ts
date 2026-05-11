@@ -80,7 +80,7 @@ User's current state: ${message}`
         generationConfig: {
           responseMimeType: 'application/json',
           temperature: 0.7,
-          maxOutputTokens: 1000,
+          maxOutputTokens: 4096,
         },
       }),
     })
