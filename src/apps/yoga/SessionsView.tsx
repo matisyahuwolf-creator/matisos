@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { catalog } from './catalog'
 import { sessions, type Session, type SessionStep } from './sessions'
+import SessionRunner from './SessionRunner'
 
 function formatMin(min: number) {
   return `${min} min`
@@ -29,9 +30,14 @@ function totalDuration(session: Session): number {
 
 export default function Sessions() {
   const [openId, setOpenId] = useState<string | null>(null)
+  const [runningId, setRunningId] = useState<string | null>(null)
   const open = useMemo(
     () => sessions.find((s) => s.id === openId) ?? null,
     [openId],
+  )
+  const running = useMemo(
+    () => sessions.find((s) => s.id === runningId) ?? null,
+    [runningId],
   )
 
   return (
@@ -62,7 +68,19 @@ export default function Sessions() {
         ))}
       </div>
 
-      {open && <SessionDetail session={open} onClose={() => setOpenId(null)} />}
+      {open && (
+        <SessionDetail
+          session={open}
+          onClose={() => setOpenId(null)}
+          onStart={() => setRunningId(open.id)}
+        />
+      )}
+      {running && (
+        <SessionRunner
+          session={running}
+          onClose={() => setRunningId(null)}
+        />
+      )}
     </section>
   )
 }
@@ -106,9 +124,11 @@ function SessionCard({
 function SessionDetail({
   session,
   onClose,
+  onStart,
 }: {
   session: Session
   onClose: () => void
+  onStart: () => void
 }) {
   const total = totalDuration(session)
   const totalMin = Math.round(total / 60)
@@ -141,6 +161,12 @@ function SessionDetail({
         <p className="mt-3 text-[13px] leading-relaxed text-white/90">
           {session.description}
         </p>
+        <button
+          onClick={onStart}
+          className="mt-4 w-full rounded-xl bg-white px-4 py-3 text-[15px] font-bold text-slate-900 shadow transition hover:bg-white/90"
+        >
+          ▶ Start session
+        </button>
       </div>
 
       <ol className="divide-y divide-slate-100">

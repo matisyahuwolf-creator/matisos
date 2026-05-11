@@ -7,6 +7,10 @@ export type SessionFocus =
   | 'Pre-Sleep'
   | 'Hip Release'
   | 'Heart Opening'
+  | 'Lower Back Relief'
+  | 'Tech Neck Reset'
+  | 'Morning Activation'
+  | 'Post-Workout Recovery'
 
 export type SessionStep = {
   poseId: string
@@ -134,6 +138,99 @@ export const sessions: Session[] = [
       { poseId: 'wide-angle-fold', durationSec: 120 },
       { poseId: 'reclining-bound-angle', durationSec: 180 },
       { poseId: 'corpse', durationSec: 180 },
+    ],
+  },
+  {
+    id: 'lower-back',
+    name: 'Lower Back Relief',
+    focus: 'Lower Back Relief',
+    difficulty: 'Beginner',
+    durationMin: 15,
+    icon: '🦴',
+    gradient: 'from-cyan-500 to-teal-700',
+    description:
+      'Targeted release for the lumbar spine and the muscles around it. Slow holds; the goal is to decompress, not to stretch hard.',
+    steps: [
+      { poseId: 'child', durationSec: 120, cue: 'Settle in. Knees can be wide if that feels better.' },
+      { poseId: 'cow', durationSec: 45 },
+      { poseId: 'cat', durationSec: 45 },
+      { poseId: 'sphinx', durationSec: 90 },
+      { poseId: 'bridge', durationSec: 90, cue: 'Multiple lifts with the breath, or one long hold — your call.' },
+      { poseId: 'supine-twist', durationSec: 60, perSide: true },
+      { poseId: 'happy-baby', durationSec: 60 },
+      { poseId: 'reclining-bound-angle', durationSec: 120 },
+      { poseId: 'legs-up-wall', durationSec: 180 },
+      { poseId: 'corpse', durationSec: 90 },
+    ],
+  },
+  {
+    id: 'tech-neck',
+    name: 'Tech Neck Reset',
+    focus: 'Tech Neck Reset',
+    difficulty: 'Beginner',
+    durationMin: 10,
+    icon: '💻',
+    gradient: 'from-slate-500 to-blue-700',
+    description:
+      'For shoulders rounded by screens and a head jutted forward. Opens the chest and mobilizes the upper back.',
+    steps: [
+      { poseId: 'easy', durationSec: 60, cue: 'Slow neck rolls — half circles, ear toward shoulder, then the other.' },
+      { poseId: 'thread-needle', durationSec: 60, perSide: true },
+      { poseId: 'cow', durationSec: 30 },
+      { poseId: 'cat', durationSec: 30 },
+      { poseId: 'sphinx', durationSec: 60 },
+      { poseId: 'cobra', durationSec: 45 },
+      { poseId: 'child', durationSec: 90, cue: 'Arms forward. Forehead heavy.' },
+      { poseId: 'supine-twist', durationSec: 60, perSide: true },
+      { poseId: 'corpse', durationSec: 60 },
+    ],
+  },
+  {
+    id: 'morning',
+    name: 'Morning Activation',
+    focus: 'Morning Activation',
+    difficulty: 'Beginner',
+    durationMin: 10,
+    icon: '☀️',
+    gradient: 'from-amber-400 to-orange-600',
+    description:
+      'Gentle activation to wake the body without shocking the nervous system. Good first thing before coffee.',
+    steps: [
+      { poseId: 'easy', durationSec: 60, cue: 'A few long breaths to settle. No rush.' },
+      { poseId: 'cow', durationSec: 30 },
+      { poseId: 'cat', durationSec: 30 },
+      { poseId: 'cobra', durationSec: 45 },
+      { poseId: 'downward-dog', durationSec: 60 },
+      { poseId: 'standing-forward-fold', durationSec: 45 },
+      { poseId: 'high-lunge', durationSec: 45, perSide: true },
+      { poseId: 'bridge', durationSec: 60 },
+      { poseId: 'tree', durationSec: 45, perSide: true },
+      { poseId: 'mountain', durationSec: 60, cue: 'Done. Feel the body awake.' },
+    ],
+  },
+  {
+    id: 'post-workout',
+    name: 'Post-Workout Cool-Down',
+    focus: 'Post-Workout Recovery',
+    difficulty: 'Beginner',
+    durationMin: 15,
+    icon: '💪',
+    gradient: 'from-lime-500 to-green-700',
+    description:
+      'Flexibility-focused recovery after strength or cardio. Stretches the major lower-body muscle groups while heart rate comes down.',
+    steps: [
+      { poseId: 'child', durationSec: 90 },
+      { poseId: 'cow', durationSec: 30 },
+      { poseId: 'cat', durationSec: 30 },
+      { poseId: 'downward-dog', durationSec: 60 },
+      { poseId: 'low-lunge', durationSec: 75, perSide: true },
+      { poseId: 'half-forward-fold', durationSec: 45 },
+      { poseId: 'standing-forward-fold', durationSec: 60 },
+      { poseId: 'seated-forward-fold', durationSec: 90 },
+      { poseId: 'bound-angle', durationSec: 90 },
+      { poseId: 'supine-twist', durationSec: 60, perSide: true },
+      { poseId: 'legs-up-wall', durationSec: 120 },
+      { poseId: 'corpse', durationSec: 90 },
     ],
   },
   {
