@@ -1,7 +1,8 @@
 import OpenAI from 'openai'
 
+export const maxDuration = 60
 export const config = {
-  maxDuration: 30,
+  maxDuration: 60,
 }
 
 type PoseInfo = { id: string; name: string; difficulty?: string }
@@ -82,14 +83,14 @@ Rules:
 
   try {
     const completion = await client.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: 'llama-3.1-8b-instant',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message },
       ],
       response_format: { type: 'json_object' },
       temperature: 0.7,
-      max_tokens: 1000,
+      max_tokens: 800,
     })
 
     const raw = completion.choices[0]?.message?.content
