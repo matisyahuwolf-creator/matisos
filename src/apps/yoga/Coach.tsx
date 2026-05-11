@@ -246,13 +246,147 @@ function MessageView({
   return null
 }
 
+const LOADING_STATUSES = [
+  'Sensing what you need',
+  'Reading the body',
+  'Choosing poses',
+  'Sequencing the flow',
+  'Writing the reasoning',
+  'Tuning the breath',
+  'Almost there',
+]
+
 function LoadingBubble() {
+  const [statusIndex, setStatusIndex] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setStatusIndex((i) => (i + 1) % LOADING_STATUSES.length)
+    }, 2200)
+    return () => clearInterval(id)
+  }, [])
+
   return (
-    <div className="self-start flex items-center gap-1.5 rounded-2xl rounded-bl-md bg-white px-4 py-2.5 text-[13px] text-slate-500 ring-1 ring-black/5">
-      <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400 [animation-delay:0ms]" />
-      <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400 [animation-delay:150ms]" />
-      <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400 [animation-delay:300ms]" />
-      <span className="ml-2">Designing your session…</span>
+    <div className="relative flex flex-col items-center justify-center gap-6 overflow-hidden rounded-2xl bg-gradient-to-br from-violet-50 via-rose-50 to-amber-50 px-4 py-12 ring-1 ring-violet-200/40">
+      {/* Soft glow background */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-violet-300/35 via-fuchsia-300/30 to-amber-300/35 blur-3xl"
+        style={{ animation: 'hueShift 10s linear infinite' }}
+      />
+
+      <div
+        className="relative h-44 w-44"
+        style={{ animation: 'hueShift 14s linear infinite' }}
+      >
+        {/* Outer ring — 12 small dots, slow clockwise */}
+        <svg
+          className="absolute inset-0"
+          viewBox="0 0 200 200"
+          style={{
+            animation: 'mandalaSlow 28s linear infinite',
+            transformOrigin: 'center',
+          }}
+          aria-hidden
+        >
+          {Array.from({ length: 12 }).map((_, i) => {
+            const angle = (i * 30 * Math.PI) / 180
+            const cx = 100 + 88 * Math.cos(angle)
+            const cy = 100 + 88 * Math.sin(angle)
+            return (
+              <circle
+                key={i}
+                cx={cx}
+                cy={cy}
+                r="3"
+                fill="#a78bfa"
+                style={{
+                  animation: `mandalaPetal 3s ease-in-out infinite ${i * 0.2}s`,
+                  transformOrigin: `${cx}px ${cy}px`,
+                }}
+              />
+            )
+          })}
+        </svg>
+
+        {/* Middle ring — 6 petals, counter-clockwise */}
+        <svg
+          className="absolute inset-0"
+          viewBox="0 0 200 200"
+          style={{
+            animation: 'mandalaSlow 18s linear infinite reverse',
+            transformOrigin: 'center',
+          }}
+          aria-hidden
+        >
+          {Array.from({ length: 6 }).map((_, i) => {
+            const angle = (i * 60 * Math.PI) / 180
+            const cx = 100 + 58 * Math.cos(angle)
+            const cy = 100 + 58 * Math.sin(angle)
+            return (
+              <ellipse
+                key={i}
+                cx={cx}
+                cy={cy}
+                rx="9"
+                ry="14"
+                fill="#ec4899"
+                opacity="0.7"
+                transform={`rotate(${i * 60} ${cx} ${cy})`}
+                style={{
+                  animation: `mandalaPetal 4s ease-in-out infinite ${i * 0.3}s`,
+                  transformOrigin: `${cx}px ${cy}px`,
+                }}
+              />
+            )
+          })}
+        </svg>
+
+        {/* Inner triangle ring */}
+        <svg
+          className="absolute inset-0"
+          viewBox="0 0 200 200"
+          style={{
+            animation: 'mandalaSlow 11s linear infinite',
+            transformOrigin: 'center',
+          }}
+          aria-hidden
+        >
+          {Array.from({ length: 3 }).map((_, i) => {
+            const angle = (i * 120 * Math.PI) / 180
+            const cx = 100 + 32 * Math.cos(angle)
+            const cy = 100 + 32 * Math.sin(angle)
+            return (
+              <circle
+                key={i}
+                cx={cx}
+                cy={cy}
+                r="6"
+                fill="#fb923c"
+                opacity="0.85"
+              />
+            )
+          })}
+        </svg>
+
+        {/* Inner pulse core */}
+        <div
+          className="absolute left-1/2 top-1/2 h-12 w-12 rounded-full bg-gradient-to-br from-amber-300 via-rose-400 to-fuchsia-500 shadow-xl"
+          style={{ animation: 'mandalaBreath 3s ease-in-out infinite' }}
+        />
+      </div>
+
+      {/* Cycling status text */}
+      <div className="relative h-5 w-full text-center">
+        {LOADING_STATUSES.map((s, i) => (
+          <p
+            key={s}
+            className="absolute inset-0 text-[13px] font-medium uppercase tracking-[0.16em] text-violet-800/80 transition-opacity duration-500"
+            style={{ opacity: statusIndex === i ? 1 : 0 }}
+          >
+            {s}…
+          </p>
+        ))}
+      </div>
     </div>
   )
 }
