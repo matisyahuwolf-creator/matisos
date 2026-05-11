@@ -67,7 +67,7 @@ function HeroCard({ app }: { app: AppEntry }) {
   return (
     <AppLink
       app={app}
-      className={`group relative block overflow-hidden rounded-[22px] bg-gradient-to-br ${app.gradient} shadow-hero press ${
+      className={`psychedelic-shimmer group relative block overflow-hidden rounded-[24px] bg-gradient-to-br ${app.gradient} shadow-hero press ${
         openable ? 'hover:-translate-y-0.5 active:scale-[0.99] active:translate-y-0' : ''
       }`}
     >
@@ -172,20 +172,20 @@ export default function Launcher() {
     <div className="min-h-screen bg-[#f2f2f7] text-slate-900 antialiased">
       <div className="mx-auto max-w-2xl px-4 pt-8 pb-16 sm:px-5 sm:pt-12">
         <header
-          className="mb-7 px-1 animate-fade-up"
+          className="mb-8 px-1 animate-fade-up"
           style={{ animationDelay: '0ms' }}
         >
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#ff3b30]">
+          <p className="ornament text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700/90">
             Personal Toolkit
           </p>
-          <h1 className="mt-1 text-[44px] font-extrabold leading-[1.05] tracking-tight text-slate-900 sm:text-[52px]">
+          <h1 className="mt-3 font-display gradient-text text-[64px] italic font-medium leading-[0.95] sm:text-[88px]">
             matisOS
           </h1>
-          <p className="mt-2 max-w-md text-[15px] leading-relaxed text-slate-500">
+          <p className="mt-4 max-w-md font-display text-[18px] italic leading-snug text-slate-700 sm:text-[20px]">
             A home for everything I'm building. Tools, practices, and the
             occasional experiment.
           </p>
-          <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
+          <p className="mt-4 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
             {todayLabel()}
           </p>
         </header>
@@ -201,11 +201,11 @@ export default function Launcher() {
           className="animate-fade-up"
           style={{ animationDelay: '180ms' }}
         >
-          <div className="mb-3 flex items-baseline justify-between px-1">
-            <h2 className="text-[22px] font-bold tracking-tight text-slate-900">
+          <div className="mb-4 flex items-baseline justify-between px-1">
+            <h2 className="font-display text-[28px] italic font-medium leading-none tracking-tight text-slate-900 sm:text-[32px]">
               Your Toolkit
             </h2>
-            <span className="text-[13px] text-slate-500">
+            <span className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-500">
               {apps.length} {apps.length === 1 ? 'app' : 'apps'}
             </span>
           </div>
@@ -251,8 +251,10 @@ export default function Launcher() {
           </div>
         </section>
 
-        <footer className="mt-12 flex items-center justify-between border-t border-slate-200/70 px-1 pt-4 text-[11px] text-slate-400">
-          <span>matis · {new Date().getFullYear()}</span>
+        <footer className="mt-14 flex items-center justify-between border-t border-amber-900/15 px-1 pt-5 text-[11px] uppercase tracking-[0.16em] text-slate-500">
+          <span className="font-display text-[13px] italic normal-case tracking-normal text-slate-600">
+            matis · {new Date().getFullYear()}
+          </span>
           <span>
             {liveCount} live{wipCount > 0 ? ` · ${wipCount} in progress` : ''}
           </span>
