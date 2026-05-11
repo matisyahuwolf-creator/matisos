@@ -15,12 +15,12 @@ export default async function handler(req: Request): Promise<Response> {
     })
   }
 
-  const apiKey = process.env.GROQ_API_KEY
+  const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
     return Response.json(
       {
         error:
-          'GROQ_API_KEY env var is missing on the server. Add it in Vercel → Settings → Environment Variables and redeploy.',
+          'GEMINI_API_KEY env var is missing on the server. Add it in Vercel → Settings → Environment Variables and redeploy.',
       },
       { status: 500 },
     )
@@ -28,7 +28,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   const client = new OpenAI({
     apiKey,
-    baseURL: 'https://api.groq.com/openai/v1',
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
     timeout: 25_000,
     maxRetries: 1,
   })
@@ -83,7 +83,7 @@ Rules:
 
   try {
     const completion = await client.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
+      model: 'gemini-1.5-flash',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message },
