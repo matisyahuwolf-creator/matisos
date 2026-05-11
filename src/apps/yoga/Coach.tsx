@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { catalog } from './catalog'
-import { fetchPoseInfo } from './wiki'
+import { poseImageUrl } from './pose-images'
 import SessionRunner from './SessionRunner'
 import type { Session, SessionStep } from './sessions'
 
@@ -221,39 +221,9 @@ function LoadingBubble() {
 }
 
 function PoseThumbnail({ poseId }: { poseId: string }) {
-  const [src, setSrc] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    let active = true
-    const name = catalog.find((p) => p.id === poseId)?.name ?? poseId
-    fetchPoseInfo(name)
-      .then((info) => {
-        if (active) setSrc(info?.thumbnail ?? null)
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [poseId])
-
-  if (loading) {
-    return (
-      <div className="h-16 w-16 shrink-0 animate-pulse rounded-xl bg-slate-100" />
-    )
-  }
-  if (!src) {
-    return (
-      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-200 to-slate-300 text-xl">
-        🧘
-      </div>
-    )
-  }
   return (
     <img
-      src={src}
+      src={poseImageUrl(poseId, 200)}
       alt=""
       loading="lazy"
       className="h-16 w-16 shrink-0 rounded-xl bg-white object-cover ring-1 ring-black/5"

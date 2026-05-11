@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { catalog } from './catalog'
 import type { Session, SessionStep } from './sessions'
-import { fetchPoseInfo } from './wiki'
+import { poseImageUrl } from './pose-images'
 import { storage } from '../../lib/storage'
 
 const AUDIO_KEY = 'yoga:audio-enabled'
@@ -48,43 +48,15 @@ function PosePreview({
   poseId: string
   userImage?: string
 }) {
-  const [wikiImage, setWikiImage] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (userImage) return
-    let active = true
-    setWikiImage(null)
-    setLoading(true)
-    const name = catalog.find((c) => c.id === poseId)?.name ?? poseId
-    fetchPoseInfo(name)
-      .then((info) => {
-        if (!active) return
-        setWikiImage(info?.thumbnail ?? null)
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [poseId, userImage])
-
-  const src = userImage ?? wikiImage
-
-  if (src) {
-    return (
-      <img
-        src={src}
-        alt={poseName(poseId)}
-        className="h-56 w-56 rounded-2xl bg-white object-contain shadow-xl ring-1 ring-white/20 sm:h-64 sm:w-64"
-      />
-    )
-  }
-  if (loading) {
-    return <div className="h-56 w-56 animate-pulse rounded-2xl bg-white/10 sm:h-64 sm:w-64" />
-  }
-  return null
+  const src = userImage ?? poseImageUrl(poseId, 600)
+  return (
+    <img
+      key={poseId}
+      src={src}
+      alt={poseName(poseId)}
+      className="h-56 w-56 rounded-2xl bg-white object-cover shadow-xl ring-1 ring-white/20 sm:h-64 sm:w-64"
+    />
+  )
 }
 
 function format(sec: number): string {
