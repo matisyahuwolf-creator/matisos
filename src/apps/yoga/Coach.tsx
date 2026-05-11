@@ -55,6 +55,9 @@ export default function Coach() {
     setHistory((prev) => [...prev, { role: 'user', text: trimmed }])
     setLoading(true)
 
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 45_000)
+
     try {
       const poses = catalog.map((p) => ({
         id: p.id,
@@ -65,6 +68,7 @@ export default function Coach() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: trimmed, poses }),
+        signal: controller.signal,
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok || !data.steps) {
@@ -74,9 +78,15 @@ export default function Coach() {
         setHistory((prev) => [...prev, { role: 'assistant', session: data }])
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Connection failed'
+      const isAbort = err instanceof DOMException && err.name === 'AbortError'
+      const msg = isAbort
+        ? 'Took too long (>45s). Try again — the model may be cold-starting.'
+        : err instanceof Error
+          ? err.message
+          : 'Connection failed'
       setHistory((prev) => [...prev, { role: 'assistant', error: msg }])
     } finally {
+      clearTimeout(timeoutId)
       setLoading(false)
     }
   }

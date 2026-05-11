@@ -1,5 +1,9 @@
 import OpenAI from 'openai'
 
+export const config = {
+  maxDuration: 30,
+}
+
 type PoseInfo = { id: string; name: string; difficulty?: string }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -24,6 +28,8 @@ export default async function handler(req: Request): Promise<Response> {
   const client = new OpenAI({
     apiKey,
     baseURL: 'https://api.groq.com/openai/v1',
+    timeout: 25_000,
+    maxRetries: 1,
   })
 
   let body: { message?: string; poses?: PoseInfo[] }
@@ -83,7 +89,7 @@ Rules:
       ],
       response_format: { type: 'json_object' },
       temperature: 0.7,
-      max_tokens: 1500,
+      max_tokens: 1000,
     })
 
     const raw = completion.choices[0]?.message?.content
