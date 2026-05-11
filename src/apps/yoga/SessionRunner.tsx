@@ -1,6 +1,69 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { catalog } from './catalog'
 import type { Session, SessionStep } from './sessions'
+import { fetchPoseInfo } from './wiki'
+import { storage } from '../../lib/storage'
+
+function loadUserImages(): Record<string, string> {
+  const raw = storage.get('yoga:state-v2')
+  if (!raw) return {}
+  try {
+    const poses = JSON.parse(raw) as Array<{ id: string; imageUrl?: string }>
+    const map: Record<string, string> = {}
+    for (const p of poses) {
+      if (p.imageUrl) map[p.id] = p.imageUrl
+    }
+    return map
+  } catch {
+    return {}
+  }
+}
+
+function PosePreview({
+  poseId,
+  userImage,
+}: {
+  poseId: string
+  userImage?: string
+}) {
+  const [wikiImage, setWikiImage] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (userImage) return
+    let active = true
+    setWikiImage(null)
+    setLoading(true)
+    const name = catalog.find((c) => c.id === poseId)?.name ?? poseId
+    fetchPoseInfo(name)
+      .then((info) => {
+        if (!active) return
+        setWikiImage(info?.thumbnail ?? null)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [poseId, userImage])
+
+  const src = userImage ?? wikiImage
+
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={poseName(poseId)}
+        className="h-56 w-56 rounded-2xl bg-white object-contain shadow-xl ring-1 ring-white/20 sm:h-64 sm:w-64"
+      />
+    )
+  }
+  if (loading) {
+    return <div className="h-56 w-56 animate-pulse rounded-2xl bg-white/10 sm:h-64 sm:w-64" />
+  }
+  return null
+}
 
 function format(sec: number): string {
   const safe = Math.max(0, sec)
@@ -40,6 +103,7 @@ export default function SessionRunner({
   const [remaining, setRemaining] = useState(flat[0]?.durationSec ?? 0)
   const [paused, setPaused] = useState(false)
   const audioCtxRef = useRef<AudioContext | null>(null)
+  const userImages = useMemo(() => loadUserImages(), [])
 
   useEffect(() => {
     const Ctx =
@@ -148,25 +212,29 @@ export default function SessionRunner({
             </>
           ) : (
             <>
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/70">
+              <PosePreview
+                poseId={current.poseId}
+                userImage={userImages[current.poseId]}
+              />
+              <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/70">
                 Step {index + 1} of {flat.length}
                 {current.side &&
                   current.totalSides > 1 &&
                   ` · Side ${current.side} of ${current.totalSides}`}
               </p>
-              <h2 className="mt-3 max-w-2xl text-4xl font-bold leading-tight sm:text-5xl">
+              <h2 className="mt-2 max-w-2xl text-3xl font-bold leading-tight sm:text-4xl">
                 {poseName(current.poseId)}
               </h2>
               {current.cue && (
-                <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/85">
+                <p className="mt-2 max-w-md text-[14px] leading-relaxed text-white/85">
                   {current.cue}
                 </p>
               )}
-              <div className="mt-12 text-7xl font-bold tabular-nums sm:text-8xl">
+              <div className="mt-5 text-6xl font-bold tabular-nums sm:text-7xl">
                 {format(remaining)}
               </div>
               {paused && (
-                <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-white/60">
+                <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white/60">
                   Paused
                 </p>
               )}
