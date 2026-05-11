@@ -1,10 +1,5 @@
 import OpenAI from 'openai'
 
-const client = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY,
-  baseURL: 'https://api.groq.com/openai/v1',
-})
-
 type PoseInfo = { id: string; name: string; difficulty?: string }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -14,6 +9,22 @@ export default async function handler(req: Request): Promise<Response> {
       headers: { 'Content-Type': 'application/json' },
     })
   }
+
+  const apiKey = process.env.GROQ_API_KEY
+  if (!apiKey) {
+    return Response.json(
+      {
+        error:
+          'GROQ_API_KEY env var is missing on the server. Add it in Vercel → Settings → Environment Variables and redeploy.',
+      },
+      { status: 500 },
+    )
+  }
+
+  const client = new OpenAI({
+    apiKey,
+    baseURL: 'https://api.groq.com/openai/v1',
+  })
 
   let body: { message?: string; poses?: PoseInfo[] }
   try {
