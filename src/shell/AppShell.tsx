@@ -17,7 +17,7 @@ export default function AppShell({
         <header className="mb-4 flex items-center justify-between px-1">
           <Link
             to="/"
-            className="flex items-center gap-1 text-[15px] font-medium text-[#0071e3] transition active:opacity-60"
+            className="flex items-center gap-1 text-[15px] font-medium text-[#0071e3] press hover:text-[#0064cc] active:opacity-60"
           >
             <svg
               width="18"
@@ -53,7 +53,7 @@ export default function AppShell({
           </h1>
         </div>
 
-        <main className="rounded-2xl bg-white p-6 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.08)] ring-1 ring-black/5">
+        <main className="rounded-2xl bg-white p-6 shadow-card ring-1 ring-black/5">
           {children}
         </main>
       </div>

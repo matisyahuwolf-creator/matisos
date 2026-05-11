@@ -344,9 +344,9 @@ function TabBar({
         <button
           key={t.key}
           onClick={() => onChange(t.key)}
-          className={`flex-1 rounded-full px-2 py-1.5 text-[12px] font-semibold transition sm:text-[13px] ${
+          className={`flex-1 rounded-full px-2 py-1.5 text-[12px] font-semibold press sm:text-[13px] ${
             value === t.key
-              ? 'bg-white text-slate-900 shadow-sm'
+              ? 'bg-white text-slate-900 shadow-[0_1px_3px_rgba(15,23,42,0.08),0_1px_2px_rgba(15,23,42,0.06)]'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >

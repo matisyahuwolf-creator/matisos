@@ -67,8 +67,8 @@ function HeroCard({ app }: { app: AppEntry }) {
   return (
     <AppLink
       app={app}
-      className={`group relative block overflow-hidden rounded-[22px] bg-gradient-to-br ${app.gradient} shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)] transition-transform duration-200 ${
-        openable ? 'active:scale-[0.99]' : ''
+      className={`group relative block overflow-hidden rounded-[22px] bg-gradient-to-br ${app.gradient} shadow-hero press ${
+        openable ? 'hover:-translate-y-0.5 active:scale-[0.99] active:translate-y-0' : ''
       }`}
     >
       <div className="flex min-h-[460px] flex-col p-6 sm:p-8">
@@ -111,8 +111,10 @@ function AppRow({ app, isLast }: { app: AppEntry; isLast: boolean }) {
     <>
       <AppLink
         app={app}
-        className={`flex items-center gap-3 px-4 py-3 transition ${
-          openable ? 'cursor-pointer active:bg-slate-100' : 'cursor-default opacity-60'
+        className={`flex items-center gap-3 px-4 py-3 press ${
+          openable
+            ? 'cursor-pointer hover:bg-slate-50 active:bg-slate-100'
+            : 'cursor-default opacity-60'
         }`}
       >
         <div
@@ -232,7 +234,7 @@ export default function Launcher() {
             </label>
           </div>
 
-          <div className="overflow-hidden rounded-2xl bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.08)] ring-1 ring-black/5">
+          <div className="overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-black/5">
             {filteredRest.length === 0 ? (
               <p className="px-4 py-10 text-center text-sm text-slate-500">
                 No apps match "{query}".
