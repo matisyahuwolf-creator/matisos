@@ -1,6 +1,9 @@
 import OpenAI from 'openai'
 
-const client = new OpenAI()
+const client = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: 'https://api.groq.com/openai/v1',
+})
 
 type PoseInfo = { id: string; name: string; difficulty?: string }
 
@@ -62,7 +65,7 @@ Rules:
 
   try {
     const completion = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'llama-3.3-70b-versatile',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message },
