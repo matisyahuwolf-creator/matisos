@@ -17,15 +17,78 @@ type Message =
   | { role: 'user'; text: string }
   | { role: 'assistant'; session?: GeneratedSession; error?: string }
 
-const SUGGESTIONS = [
-  "I'm exhausted from work",
-  "I'm anxious",
-  "Lower back pain",
-  "Sat at a desk all day",
-  "Can't sleep",
-  "Overwhelmed",
-  "Need to wake up",
-  "Stiff and sore",
+const MOODS: { emoji: string; label: string; prompt: string }[] = [
+  {
+    emoji: '😰',
+    label: 'Fearful',
+    prompt:
+      "I feel fear or anxiety. There's a charged activation in my nervous system. I need to settle into safety.",
+  },
+  {
+    emoji: '😔',
+    label: 'Grieving',
+    prompt:
+      "I feel sadness or grief — something heavy is pressing on my chest. I need space to feel it and gentle support.",
+  },
+  {
+    emoji: '🔥',
+    label: 'Angry',
+    prompt:
+      "I feel anger or frustration — there's heat I need to move through my body before it gets stuck.",
+  },
+  {
+    emoji: '🌀',
+    label: 'Scattered',
+    prompt:
+      "My mind is scattered, restless, can't focus. I need to gather myself back into my body.",
+  },
+  {
+    emoji: '😶',
+    label: 'Numb',
+    prompt:
+      "I feel disconnected from my body — numb, dissociated. I need to gently come back into sensation.",
+  },
+  {
+    emoji: '🪫',
+    label: 'Depleted',
+    prompt:
+      "I am completely depleted, drained. I have nothing left to give. I need to receive rest.",
+  },
+  {
+    emoji: '🌊',
+    label: 'Overwhelmed',
+    prompt:
+      "Everything feels like too much. My system is flooded. I need a small, contained, simple practice.",
+  },
+  {
+    emoji: '🪨',
+    label: 'Stuck',
+    prompt:
+      "I feel stagnant, frozen, stuck — energy not flowing. I need something to shift and move me.",
+  },
+  {
+    emoji: '🌫️',
+    label: 'Foggy',
+    prompt:
+      'My head is foggy, my thinking unclear. I need to drop out of my head and into the body.',
+  },
+  {
+    emoji: '⚓',
+    label: 'Ungrounded',
+    prompt:
+      "I feel ungrounded, floaty, unsteady. I need to root down into the earth and feel held.",
+  },
+  {
+    emoji: '☀️',
+    label: 'Open',
+    prompt:
+      "I feel open, alive, ready. I want to deepen this feeling and honor it in my body.",
+  },
+  {
+    emoji: '✨',
+    label: 'Just guide me',
+    prompt: 'I don\'t know what I need. Give me what feels balanced and restorative.',
+  },
 ]
 
 function poseName(id: string): string {
@@ -42,7 +105,6 @@ function totalMinutes(steps: SessionStep[]): number {
 
 export default function Coach() {
   const [history, setHistory] = useState<Message[]>([])
-  const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [running, setRunning] = useState<Session | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
@@ -55,7 +117,6 @@ export default function Coach() {
     const trimmed = text.trim()
     if (!trimmed || loading) return
 
-    setInput('')
     setHistory((prev) => [...prev, { role: 'user', text: trimmed }])
     setLoading(true)
 
@@ -118,28 +179,28 @@ export default function Coach() {
           Coach
         </p>
         <h2 className="mt-0.5 text-2xl font-bold text-slate-900">
-          Tell me how you feel.
+          How do you feel?
         </h2>
         <p className="mt-1 text-[13px] text-slate-500">
-          I'll build a session for your mood and what your body needs right
-          now.
+          Tap a mood. I'll build a session for it.
         </p>
       </header>
 
-      {history.length === 0 && (
-        <div className="flex flex-wrap gap-1.5 px-1">
-          {SUGGESTIONS.map((s) => (
-            <button
-              key={s}
-              onClick={() => sendMessage(s)}
-              disabled={loading}
-              className="rounded-full bg-slate-200/70 px-3 py-1 text-[12px] font-medium text-slate-700 transition hover:bg-slate-200 disabled:opacity-60"
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        {MOODS.map((m) => (
+          <button
+            key={m.label}
+            onClick={() => sendMessage(m.prompt)}
+            disabled={loading}
+            className="flex flex-col items-center gap-1 rounded-xl bg-white p-3 ring-1 ring-black/5 press hover:bg-slate-50 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span className="text-2xl">{m.emoji}</span>
+            <span className="text-[11px] font-semibold text-slate-700">
+              {m.label}
+            </span>
+          </button>
+        ))}
+      </div>
 
       <div className="flex flex-col gap-3">
         {history.map((msg, i) => (
@@ -148,29 +209,6 @@ export default function Coach() {
         {loading && <LoadingBubble />}
         <div ref={endRef} />
       </div>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          sendMessage(input)
-        }}
-        className="flex gap-2"
-      >
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="e.g. anxious before a meeting…"
-          disabled={loading}
-          className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[15px] outline-none transition focus:border-[#0071e3] disabled:opacity-60"
-        />
-        <button
-          type="submit"
-          disabled={!input.trim() || loading}
-          className="rounded-xl bg-[#0071e3] px-4 py-2 text-[15px] font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-slate-300"
-        >
-          Send
-        </button>
-      </form>
 
       {running && (
         <SessionRunner

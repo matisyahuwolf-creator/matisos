@@ -16,6 +16,7 @@ export type SessionStep = {
   poseId: string
   durationSec: number
   cue?: string
+  rationale?: string
   perSide?: boolean
 }
 

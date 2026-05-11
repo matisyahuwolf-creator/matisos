@@ -5,9 +5,16 @@ import { poseImageUrl } from './pose-images'
 import { storage } from '../../lib/storage'
 
 const AUDIO_KEY = 'yoga:audio-enabled'
+const MUSIC_KEY = 'yoga:music-enabled'
 
 function loadAudioPref(): boolean {
   const raw = storage.get(AUDIO_KEY)
+  if (raw === null) return true
+  return raw === 'true'
+}
+
+function loadMusicPref(): boolean {
+  const raw = storage.get(MUSIC_KEY)
   if (raw === null) return true
   return raw === 'true'
 }
@@ -97,8 +104,16 @@ export default function SessionRunner({
   const [remaining, setRemaining] = useState(flat[0]?.durationSec ?? 0)
   const [paused, setPaused] = useState(false)
   const [audioEnabled, setAudioEnabled] = useState<boolean>(() => loadAudioPref())
+  const [musicEnabled, setMusicEnabled] = useState<boolean>(() => loadMusicPref())
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
   const audioCtxRef = useRef<AudioContext | null>(null)
+  const droneRef = useRef<{
+    osc1: OscillatorNode
+    osc2: OscillatorNode
+    osc3: OscillatorNode
+    lfo: OscillatorNode
+    gain: GainNode
+  } | null>(null)
   const userImages = useMemo(() => loadUserImages(), [])
 
   useEffect(() => {
@@ -133,6 +148,79 @@ export default function SessionRunner({
     if (!next && typeof window !== 'undefined') {
       window.speechSynthesis?.cancel()
     }
+  }
+
+  function startDrone() {
+    const ctx = audioCtxRef.current
+    if (!ctx || droneRef.current) return
+    try {
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {})
+      }
+      const masterGain = ctx.createGain()
+      masterGain.gain.setValueAtTime(0, ctx.currentTime)
+      masterGain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 2.5)
+      masterGain.connect(ctx.destination)
+      const fundamental = 110
+      const osc1 = ctx.createOscillator()
+      osc1.type = 'sine'
+      osc1.frequency.value = fundamental
+      osc1.connect(masterGain)
+      const osc2 = ctx.createOscillator()
+      osc2.type = 'sine'
+      osc2.frequency.value = fundamental * 1.5
+      osc2.connect(masterGain)
+      const osc3 = ctx.createOscillator()
+      osc3.type = 'sine'
+      osc3.frequency.value = fundamental * 2
+      osc3.connect(masterGain)
+      const lfo = ctx.createOscillator()
+      lfo.frequency.value = 0.08
+      const lfoGain = ctx.createGain()
+      lfoGain.gain.value = 1.8
+      lfo.connect(lfoGain)
+      lfoGain.connect(osc1.frequency)
+      lfoGain.connect(osc2.frequency)
+      osc1.start()
+      osc2.start()
+      osc3.start()
+      lfo.start()
+      droneRef.current = { osc1, osc2, osc3, lfo, gain: masterGain }
+    } catch {
+      // ignored
+    }
+  }
+
+  function stopDrone() {
+    const ctx = audioCtxRef.current
+    const drone = droneRef.current
+    if (!ctx || !drone) return
+    try {
+      drone.gain.gain.cancelScheduledValues(ctx.currentTime)
+      drone.gain.gain.setValueAtTime(drone.gain.gain.value, ctx.currentTime)
+      drone.gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1)
+    } catch {
+      // ignored
+    }
+    setTimeout(() => {
+      try {
+        drone.osc1.stop()
+        drone.osc2.stop()
+        drone.osc3.stop()
+        drone.lfo.stop()
+      } catch {
+        // ignored
+      }
+      droneRef.current = null
+    }, 1200)
+  }
+
+  function toggleMusic() {
+    const next = !musicEnabled
+    setMusicEnabled(next)
+    storage.set(MUSIC_KEY, String(next))
+    if (next) startDrone()
+    else stopDrone()
   }
 
   useEffect(() => {
@@ -183,6 +271,18 @@ export default function SessionRunner({
   const isLastStep = index >= flat.length - 1
   const isComplete = isLastStep && remaining <= 0
   const current = flat[index]
+
+  useEffect(() => {
+    if (musicEnabled && !paused && !isComplete) {
+      startDrone()
+    } else {
+      stopDrone()
+    }
+    return () => {
+      stopDrone()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [musicEnabled, paused, isComplete])
 
   useEffect(() => {
     if (paused || isComplete) return
@@ -249,9 +349,30 @@ export default function SessionRunner({
   const progress = ((index + (isComplete ? 1 : 0)) / flat.length) * 100
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white">
+    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white overflow-hidden">
       <div
         className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${session.gradient} opacity-25`}
+      />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{
+          backgroundImage: `
+            radial-gradient(circle at 15% 20%, rgba(217, 70, 239, 0.35), transparent 45%),
+            radial-gradient(circle at 85% 80%, rgba(56, 189, 248, 0.3), transparent 45%),
+            radial-gradient(circle at 50% 50%, rgba(251, 146, 60, 0.2), transparent 60%)
+          `,
+          animation: 'pardesShift 28s ease-in-out infinite',
+          mixBlendMode: 'screen',
+        }}
+      />
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[160vmin] w-[160vmin] -translate-x-1/2 -translate-y-1/2 opacity-15"
+        style={{
+          backgroundImage: `conic-gradient(from 0deg, transparent 0deg, rgba(255,255,255,0.4) 10deg, transparent 20deg, transparent 40deg, rgba(255,255,255,0.3) 50deg, transparent 60deg, transparent 80deg, rgba(255,255,255,0.4) 90deg, transparent 100deg, transparent 120deg, rgba(255,255,255,0.3) 130deg, transparent 140deg, transparent 360deg)`,
+          borderRadius: '50%',
+          animation: 'pardesShift 90s linear infinite',
+          mixBlendMode: 'overlay',
+        }}
       />
       <div className="relative flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),1.5rem)]">
         <div className="flex items-center justify-between gap-2">
@@ -259,6 +380,14 @@ export default function SessionRunner({
             {session.name}
           </p>
           <div className="flex items-center gap-2">
+            <button
+              onClick={toggleMusic}
+              className="rounded-full bg-white/10 px-2 py-1 text-[14px] backdrop-blur transition hover:bg-white/20"
+              aria-label={musicEnabled ? 'Mute music' : 'Enable music'}
+              title={musicEnabled ? 'Music on' : 'Music off'}
+            >
+              {musicEnabled ? '🎵' : '🎶'}
+            </button>
             <button
               onClick={toggleAudio}
               className="rounded-full bg-white/10 px-2 py-1 text-[14px] backdrop-blur transition hover:bg-white/20"
@@ -331,6 +460,11 @@ export default function SessionRunner({
               {current.cue && (
                 <p className="mt-3 max-w-md text-[14px] leading-relaxed text-white/85">
                   {current.cue}
+                </p>
+              )}
+              {current.rationale && (
+                <p className="mt-3 max-w-md rounded-lg bg-white/10 px-3 py-2 text-[12px] leading-relaxed italic text-white/80 backdrop-blur">
+                  {current.rationale}
                 </p>
               )}
               <div className="mt-5 text-6xl font-bold tabular-nums sm:text-7xl">
