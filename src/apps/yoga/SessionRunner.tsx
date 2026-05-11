@@ -4,6 +4,28 @@ import type { Session, SessionStep } from './sessions'
 import { fetchPoseInfo } from './wiki'
 import { storage } from '../../lib/storage'
 
+const AUDIO_KEY = 'yoga:audio-enabled'
+
+function loadAudioPref(): boolean {
+  const raw = storage.get(AUDIO_KEY)
+  if (raw === null) return true
+  return raw === 'true'
+}
+
+function pickVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
+  const en = voices.filter((v) => v.lang.toLowerCase().startsWith('en'))
+  if (en.length === 0) return null
+  const premium = en.find((v) => /premium|enhanced|neural|wavenet/i.test(v.name))
+  if (premium) return premium
+  const named = en.find((v) =>
+    /samantha|karen|moira|daniel|fiona|aaron|nicky|allison|joelle/i.test(
+      v.name,
+    ),
+  )
+  if (named) return named
+  return en[0]
+}
+
 function loadUserImages(): Record<string, string> {
   const raw = storage.get('yoga:state-v2')
   if (!raw) return {}
@@ -102,8 +124,64 @@ export default function SessionRunner({
   const [index, setIndex] = useState(0)
   const [remaining, setRemaining] = useState(flat[0]?.durationSec ?? 0)
   const [paused, setPaused] = useState(false)
+  const [audioEnabled, setAudioEnabled] = useState<boolean>(() => loadAudioPref())
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
   const audioCtxRef = useRef<AudioContext | null>(null)
   const userImages = useMemo(() => loadUserImages(), [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return
+    const load = () => setVoices(window.speechSynthesis.getVoices())
+    load()
+    window.speechSynthesis.addEventListener('voiceschanged', load)
+    return () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', load)
+      window.speechSynthesis.cancel()
+    }
+  }, [])
+
+  const voice = useMemo(() => pickVoice(voices), [voices])
+
+  function speak(text: string) {
+    if (!audioEnabled) return
+    if (typeof window === 'undefined' || !window.speechSynthesis) return
+    window.speechSynthesis.cancel()
+    const u = new SpeechSynthesisUtterance(text)
+    if (voice) u.voice = voice
+    u.rate = 0.9
+    u.pitch = 0.95
+    u.volume = 1
+    window.speechSynthesis.speak(u)
+  }
+
+  function toggleAudio() {
+    const next = !audioEnabled
+    setAudioEnabled(next)
+    storage.set(AUDIO_KEY, String(next))
+    if (!next && typeof window !== 'undefined') {
+      window.speechSynthesis?.cancel()
+    }
+  }
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined') return
+    const nav = navigator as Navigator & {
+      wakeLock?: { request: (type: 'screen') => Promise<{ release: () => Promise<void> }> }
+    }
+    if (!nav.wakeLock) return
+    let lock: { release: () => Promise<void> } | null = null
+    nav.wakeLock
+      .request('screen')
+      .then((l) => {
+        lock = l
+      })
+      .catch(() => {
+        // ignored
+      })
+    return () => {
+      lock?.release().catch(() => {})
+    }
+  }, [])
 
   useEffect(() => {
     const Ctx =
@@ -141,13 +219,43 @@ export default function SessionRunner({
       return () => clearTimeout(id)
     }
     if (!isLastStep) {
-      playDing()
+      if (!audioEnabled) playDing()
       setIndex((i) => i + 1)
       setRemaining(flat[index + 1].durationSec)
     } else {
-      playDing()
+      if (!audioEnabled) playDing()
     }
-  }, [remaining, paused, index, isLastStep, isComplete, flat])
+  }, [remaining, paused, index, isLastStep, isComplete, flat, audioEnabled])
+
+  useEffect(() => {
+    if (!audioEnabled || isComplete) {
+      if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
+      return
+    }
+    if (paused) {
+      if (typeof window !== 'undefined') window.speechSynthesis?.pause()
+      return
+    }
+    if (typeof window !== 'undefined') window.speechSynthesis?.resume()
+    const step = flat[index]
+    if (!step) return
+    const name = poseName(step.poseId)
+    const sideText =
+      step.side && step.totalSides > 1
+        ? step.side === 1
+          ? 'First side. '
+          : 'Other side. '
+        : ''
+    const cueText = step.cue ? ` ${step.cue}` : ''
+    speak(`${sideText}${name}.${cueText}`)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index, audioEnabled, paused, isComplete, voice])
+
+  useEffect(() => {
+    if (isComplete && audioEnabled) {
+      speak('Session complete. Notice the body. Take a moment.')
+    }
+  }, [isComplete, audioEnabled, voice])
 
   function goPrev() {
     if (index === 0) return
@@ -174,16 +282,26 @@ export default function SessionRunner({
         className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${session.gradient} opacity-25`}
       />
       <div className="relative flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),1.5rem)]">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/60">
             {session.name}
           </p>
-          <button
-            onClick={onClose}
-            className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider backdrop-blur transition hover:bg-white/20"
-          >
-            End
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleAudio}
+              className="rounded-full bg-white/10 px-2 py-1 text-[14px] backdrop-blur transition hover:bg-white/20"
+              aria-label={audioEnabled ? 'Mute voice guide' : 'Enable voice guide'}
+              title={audioEnabled ? 'Voice on' : 'Voice off'}
+            >
+              {audioEnabled ? '🔊' : '🔇'}
+            </button>
+            <button
+              onClick={onClose}
+              className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider backdrop-blur transition hover:bg-white/20"
+            >
+              End
+            </button>
+          </div>
         </div>
 
         <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/15">
