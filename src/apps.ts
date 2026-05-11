@@ -9,6 +9,7 @@ type BaseEntry = {
   icon: string
   status: 'live' | 'wip'
   gradient: string
+  category: 'Wellness' | 'Tools' | 'Meta'
 }
 
 export type AppEntry =
@@ -26,6 +27,7 @@ export const apps: AppEntry[] = [
     icon: '🧘',
     status: 'live',
     gradient: 'from-emerald-400 via-teal-500 to-cyan-600',
+    category: 'Wellness',
     component: Yoga,
   },
   {
@@ -38,6 +40,7 @@ export const apps: AppEntry[] = [
     icon: '📝',
     status: 'live',
     gradient: 'from-amber-400 to-orange-500',
+    category: 'Tools',
     component: Scratch,
   },
   {
@@ -49,16 +52,6 @@ export const apps: AppEntry[] = [
     icon: '📦',
     status: 'live',
     gradient: 'from-slate-700 to-slate-900',
-  },
-  {
-    kind: 'internal',
-    slug: 'coming-soon',
-    name: 'Coming soon',
-    tagline: 'Future',
-    description: 'Your next app lands here. Add a folder under src/apps/.',
-    icon: '✨',
-    status: 'wip',
-    gradient: 'from-pink-400 to-fuchsia-500',
-    component: () => null,
+    category: 'Meta',
   },
 ]

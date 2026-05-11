@@ -12,6 +12,19 @@ function todayLabel() {
     .toUpperCase()
 }
 
+function categoryTone(category: string): string {
+  switch (category) {
+    case 'Wellness':
+      return 'bg-emerald-100 text-emerald-700'
+    case 'Tools':
+      return 'bg-amber-100 text-amber-700'
+    case 'Meta':
+      return 'bg-slate-100 text-slate-600'
+    default:
+      return 'bg-slate-100 text-slate-600'
+  }
+}
+
 function isOpenable(app: AppEntry) {
   if (app.status !== 'live') return false
   if (app.kind === 'external') return app.url !== '#'
@@ -108,9 +121,16 @@ function AppRow({ app, isLast }: { app: AppEntry; isLast: boolean }) {
           <span>{app.icon}</span>
         </div>
         <div className="min-w-0 flex-1 text-left">
-          <p className="truncate text-[15px] font-semibold text-slate-900">
-            {app.name}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="truncate text-[15px] font-semibold text-slate-900">
+              {app.name}
+            </p>
+            <span
+              className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${categoryTone(app.category)}`}
+            >
+              {app.category}
+            </span>
+          </div>
           <p className="truncate text-[13px] text-slate-500">{app.tagline}</p>
         </div>
         <span
@@ -150,15 +170,22 @@ export default function Launcher() {
     <div className="min-h-screen bg-[#f2f2f7] text-slate-900 antialiased">
       <div className="mx-auto max-w-2xl px-4 pt-8 pb-16 sm:px-5 sm:pt-12">
         <header
-          className="mb-6 px-1 animate-fade-up"
+          className="mb-7 px-1 animate-fade-up"
           style={{ animationDelay: '0ms' }}
         >
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#ff3b30]">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#ff3b30]">
+            Personal Toolkit
+          </p>
+          <h1 className="mt-1 text-[44px] font-extrabold leading-[1.05] tracking-tight text-slate-900 sm:text-[52px]">
+            matisOS
+          </h1>
+          <p className="mt-2 max-w-md text-[15px] leading-relaxed text-slate-500">
+            A home for everything I'm building. Tools, practices, and the
+            occasional experiment.
+          </p>
+          <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
             {todayLabel()}
           </p>
-          <h1 className="mt-1 text-[40px] font-extrabold leading-tight tracking-tight text-slate-900 sm:text-[44px]">
-            Today
-          </h1>
         </header>
 
         <section
@@ -174,10 +201,10 @@ export default function Launcher() {
         >
           <div className="mb-3 flex items-baseline justify-between px-1">
             <h2 className="text-[22px] font-bold tracking-tight text-slate-900">
-              All Apps
+              Your Toolkit
             </h2>
             <span className="text-[13px] text-slate-500">
-              {apps.length} total
+              {apps.length} {apps.length === 1 ? 'app' : 'apps'}
             </span>
           </div>
 
@@ -222,8 +249,11 @@ export default function Launcher() {
           </div>
         </section>
 
-        <footer className="mt-10 px-1 text-[12px] text-slate-400">
-          {liveCount} live · {wipCount} in progress
+        <footer className="mt-12 flex items-center justify-between border-t border-slate-200/70 px-1 pt-4 text-[11px] text-slate-400">
+          <span>matis · {new Date().getFullYear()}</span>
+          <span>
+            {liveCount} live{wipCount > 0 ? ` · ${wipCount} in progress` : ''}
+          </span>
         </footer>
       </div>
     </div>
