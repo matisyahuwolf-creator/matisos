@@ -3,6 +3,7 @@ import { storage } from '../../lib/storage'
 import PoseInfo from './PoseInfo'
 import AIDiagram from './AIDiagram'
 import SessionsView from './SessionsView'
+import TracksView from './TracksView'
 import { catalog, type Difficulty } from './catalog'
 
 type Status = 'library' | 'learning' | 'mastered'
@@ -182,6 +183,8 @@ export default function Yoga() {
 
   return (
     <div className="flex flex-col gap-6">
+      <TracksView />
+
       <div className="grid grid-cols-3 gap-2">
         <Stat value={learning.length} label="Working on" tone="amber" />
         <Stat value={mastered.length} label="Mastered" tone="emerald" />
