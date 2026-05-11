@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { catalog } from './catalog'
+import { fetchPoseInfo } from './wiki'
 import SessionRunner from './SessionRunner'
 import type { Session, SessionStep } from './sessions'
 
@@ -219,6 +220,90 @@ function LoadingBubble() {
   )
 }
 
+function PoseThumbnail({ poseId }: { poseId: string }) {
+  const [src, setSrc] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    const name = catalog.find((p) => p.id === poseId)?.name ?? poseId
+    fetchPoseInfo(name)
+      .then((info) => {
+        if (active) setSrc(info?.thumbnail ?? null)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [poseId])
+
+  if (loading) {
+    return (
+      <div className="h-16 w-16 shrink-0 animate-pulse rounded-xl bg-slate-100" />
+    )
+  }
+  if (!src) {
+    return (
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-200 to-slate-300 text-xl">
+        🧘
+      </div>
+    )
+  }
+  return (
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      className="h-16 w-16 shrink-0 rounded-xl bg-white object-cover ring-1 ring-black/5"
+    />
+  )
+}
+
+function StepRow({ step, index }: { step: GeneratedStep; index: number }) {
+  const [open, setOpen] = useState(false)
+  const dur = step.perSide
+    ? `${step.durationSec}s / side`
+    : `${step.durationSec}s`
+  return (
+    <li className="px-4 py-3">
+      <div className="flex items-start gap-3">
+        <PoseThumbnail poseId={step.poseId} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="truncate text-[15px] font-semibold text-slate-900">
+              <span className="text-slate-400">{index + 1}.</span>{' '}
+              {poseName(step.poseId)}
+            </p>
+            <p className="shrink-0 text-[11px] font-medium text-slate-500">
+              {dur}
+            </p>
+          </div>
+          {step.cue && (
+            <p className="mt-1 text-[12px] leading-snug text-slate-600">
+              {step.cue}
+            </p>
+          )}
+          {step.rationale && (
+            <button
+              onClick={() => setOpen((o) => !o)}
+              className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-violet-700 hover:text-violet-900"
+            >
+              {open ? '− Hide reasoning' : '+ Why this pose'}
+            </button>
+          )}
+          {open && step.rationale && (
+            <p className="mt-2 rounded-lg bg-amber-50/60 px-2.5 py-1.5 text-[12px] leading-snug italic text-slate-700">
+              {step.rationale}
+            </p>
+          )}
+        </div>
+      </div>
+    </li>
+  )
+}
+
 function GeneratedCard({
   session,
   onRun,
@@ -227,70 +312,45 @@ function GeneratedCard({
   onRun: () => void
 }) {
   const minutes = totalMinutes(session.steps)
+  const [arcOpen, setArcOpen] = useState(false)
   return (
     <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/5">
       <div className="bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-700 p-5 text-white">
         <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/85">
           Custom · {session.steps.length} poses · ~{minutes} min
         </p>
-        <h3 className="mt-1 text-xl font-bold leading-tight">
-          {session.name}
-        </h3>
+        <h3 className="mt-1 text-xl font-bold leading-tight">{session.name}</h3>
         <p className="mt-2 text-[13px] leading-relaxed text-white/90">
           {session.description}
         </p>
         <button
           onClick={onRun}
-          className="mt-4 w-full rounded-xl bg-white px-4 py-3 text-[15px] font-bold text-slate-900 shadow transition hover:bg-white/90"
+          className="mt-4 w-full rounded-xl bg-white px-4 py-3 text-[15px] font-bold text-slate-900 shadow press hover:bg-white/90"
         >
           ▶ Start session
         </button>
       </div>
 
       {session.arc && (
-        <div className="border-b border-slate-100 bg-violet-50/40 px-5 py-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-violet-700">
-            The arc
-          </p>
-          <p className="mt-1 text-[13px] leading-relaxed text-slate-700">
-            {session.arc}
-          </p>
+        <div className="border-b border-slate-100 px-5 py-3">
+          <button
+            onClick={() => setArcOpen((o) => !o)}
+            className="flex w-full items-center justify-between text-[11px] font-bold uppercase tracking-[0.12em] text-violet-700"
+          >
+            <span>The arc</span>
+            <span className="text-[12px]">{arcOpen ? '−' : '+'}</span>
+          </button>
+          {arcOpen && (
+            <p className="mt-1.5 text-[12px] leading-relaxed italic text-slate-600">
+              {session.arc}
+            </p>
+          )}
         </div>
       )}
 
       <ol className="divide-y divide-slate-100">
         {session.steps.map((step, i) => (
-          <li key={i} className="px-5 py-4">
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[12px] font-bold text-slate-700">
-                {i + 1}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="truncate text-[15px] font-semibold text-slate-900">
-                    {poseName(step.poseId)}
-                  </p>
-                  <p className="shrink-0 text-[11px] font-medium text-slate-500">
-                    {step.durationSec}s{step.perSide ? ' / side' : ''}
-                  </p>
-                </div>
-                {step.cue && (
-                  <p className="mt-1 text-[12px] leading-snug text-slate-600">
-                    <span className="font-semibold text-slate-700">Cue · </span>
-                    {step.cue}
-                  </p>
-                )}
-                {step.rationale && (
-                  <p className="mt-2 rounded-lg bg-amber-50/70 px-2.5 py-1.5 text-[12px] leading-snug text-slate-700">
-                    <span className="font-semibold text-amber-800">
-                      Why ·{' '}
-                    </span>
-                    {step.rationale}
-                  </p>
-                )}
-              </div>
-            </div>
-          </li>
+          <StepRow key={i} step={step} index={i} />
         ))}
       </ol>
     </div>
