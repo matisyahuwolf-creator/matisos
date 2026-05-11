@@ -1,5 +1,3 @@
-import OpenAI from 'openai'
-
 export const maxDuration = 60
 export const config = {
   maxDuration: 60,
@@ -26,13 +24,6 @@ export default async function handler(req: Request): Promise<Response> {
     )
   }
 
-  const client = new OpenAI({
-    apiKey,
-    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
-    timeout: 25_000,
-    maxRetries: 1,
-  })
-
   let body: { message?: string; poses?: PoseInfo[] }
   try {
     body = await req.json()
@@ -54,17 +45,15 @@ export default async function handler(req: Request): Promise<Response> {
     .map((p) => `- ${p.id}: ${p.name}${p.difficulty ? ` (${p.difficulty})` : ''}`)
     .join('\n')
 
-  const systemPrompt = `You are a calm, supportive yoga and movement coach. The user practices via a guided app and you are helping them pick a session based on how they feel right now.
+  const prompt = `You are a calm, supportive yoga coach. Generate a custom session based on the user's mood.
 
-Available poses (use these EXACT ids — do not invent ids):
+Available poses (use these EXACT ids — do not invent any):
 ${poseList}
 
-Generate a single custom session tailored to the user's mood and needs. Always start with a grounding pose and end with a closing/restorative pose (Corpse Pose / child / legs-up-wall are good).
-
-Return ONLY valid JSON in this exact shape:
+Return ONLY a JSON object in this exact shape:
 {
   "name": "Short session name (3-6 words)",
-  "description": "2-3 sentence description: what this session does, why it fits this person right now, what to expect.",
+  "description": "2-3 sentence description of what this session does and why it fits.",
   "steps": [
     { "poseId": "exact-id-from-list", "durationSec": 60, "cue": "Brief calm instruction.", "perSide": false }
   ]
@@ -73,29 +62,52 @@ Return ONLY valid JSON in this exact shape:
 Rules:
 - Use ONLY pose IDs from the list above (exact match)
 - 5-12 steps total
-- Hold durations: 30-180s. Restorative poses 90-180s; active/standing poses 30-60s
-- Use "perSide": true ONLY for bilateral poses (lunges, pigeon, warriors, twists, etc.)
-- Cues are calm, present-tense ("Notice the contact with the ground", "Feel the breath go in and out"), never prescriptive ("you should…")
-- If user sounds overwhelmed or activated: shorter session, more restorative
-- If user sounds tired or low energy: gentle wake-up flow
-- If user is in pain: avoid loading the painful area; favor counter-stretches and restorative poses
-- Default to Beginner poses unless user explicitly asks for challenge`
+- Hold durations: 30-180 seconds
+- Include a grounding pose at the start and a closing pose (corpse, child, or legs-up-wall) at the end
+- Use "perSide": true ONLY for bilateral poses (pigeon, lunges, twists, warriors)
+- Cues are calm, present-tense ("Notice the breath", "Feel the ground"), never prescriptive
+- Default to Beginner poses unless user wants challenge
+- Match the energy: shorter session if overwhelmed; gentle wake-up if tired
+
+User's current state: ${message}`
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 25_000)
 
   try {
-    const completion = await client.chat.completions.create({
-      model: 'gemini-1.5-flash',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: message },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.7,
-      max_tokens: 800,
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.7,
+          maxOutputTokens: 1000,
+        },
+      }),
+      signal: controller.signal,
     })
+    clearTimeout(timeoutId)
 
-    const raw = completion.choices[0]?.message?.content
-    if (!raw) {
-      return Response.json({ error: 'Empty model response' }, { status: 502 })
+    if (!res.ok) {
+      const errText = await res.text()
+      return Response.json(
+        { error: `Gemini API ${res.status}: ${errText.slice(0, 300)}` },
+        { status: 500 },
+      )
+    }
+
+    const data = await res.json()
+    const text: string | undefined =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text
+    if (!text) {
+      return Response.json(
+        { error: 'Gemini returned no text. Response: ' + JSON.stringify(data).slice(0, 200) },
+        { status: 502 },
+      )
     }
 
     let parsed: {
@@ -109,12 +121,24 @@ Rules:
       }>
     }
     try {
-      parsed = JSON.parse(raw)
+      parsed = JSON.parse(text)
     } catch {
-      return Response.json(
-        { error: 'Model response was not valid JSON' },
-        { status: 502 },
-      )
+      const match = text.match(/```(?:json)?\s*([\s\S]*?)```/)
+      if (match) {
+        try {
+          parsed = JSON.parse(match[1])
+        } catch {
+          return Response.json(
+            { error: 'Model output was not valid JSON' },
+            { status: 502 },
+          )
+        }
+      } else {
+        return Response.json(
+          { error: 'Model output was not valid JSON' },
+          { status: 502 },
+        )
+      }
     }
 
     if (
@@ -157,7 +181,13 @@ Rules:
       steps: cleanSteps,
     })
   } catch (err) {
-    const errMsg = err instanceof Error ? err.message : 'Generation failed'
+    clearTimeout(timeoutId)
+    const isAbort = err instanceof Error && err.name === 'AbortError'
+    const errMsg = isAbort
+      ? 'Gemini API call timed out after 25s'
+      : err instanceof Error
+        ? err.message
+        : 'Unknown error'
     return Response.json({ error: errMsg }, { status: 500 })
   }
 }
