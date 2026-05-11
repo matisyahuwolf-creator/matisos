@@ -5,6 +5,7 @@ import AIDiagram from './AIDiagram'
 import SessionsView from './SessionsView'
 import TracksView from './TracksView'
 import Today, { type TabKey } from './Today'
+import Coach from './Coach'
 import { catalog, type Difficulty } from './catalog'
 
 type Status = 'library' | 'learning' | 'mastered'
@@ -198,6 +199,8 @@ export default function Yoga() {
         />
       )}
 
+      {tab === 'coach' && <Coach />}
+
       {tab === 'programs' && <TracksView />}
 
       {tab === 'sessions' && <SessionsView />}
@@ -322,6 +325,7 @@ export default function Yoga() {
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'today', label: 'Today' },
+  { key: 'coach', label: 'Coach' },
   { key: 'programs', label: 'Programs' },
   { key: 'sessions', label: 'Sessions' },
   { key: 'library', label: 'Library' },
@@ -340,7 +344,7 @@ function TabBar({
         <button
           key={t.key}
           onClick={() => onChange(t.key)}
-          className={`flex-1 rounded-full px-3 py-1.5 text-[13px] font-semibold transition ${
+          className={`flex-1 rounded-full px-2 py-1.5 text-[12px] font-semibold transition sm:text-[13px] ${
             value === t.key
               ? 'bg-white text-slate-900 shadow-sm'
               : 'text-slate-600 hover:text-slate-900'

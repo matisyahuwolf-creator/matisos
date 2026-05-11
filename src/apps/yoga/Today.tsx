@@ -46,7 +46,7 @@ function pickByTimeOfDay(): Session {
   return sessions.find((s) => s.id === id) ?? sessions[0]
 }
 
-export type TabKey = 'today' | 'programs' | 'sessions' | 'library'
+export type TabKey = 'today' | 'coach' | 'programs' | 'sessions' | 'library'
 
 type TodayProps = {
   stats: { working: number; mastered: number; library: number }
