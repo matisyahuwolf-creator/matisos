@@ -132,9 +132,11 @@ User's current state: ${message}`
     }
 
     if (!parsed || !parsed.name || !parsed.description || !Array.isArray(parsed.steps)) {
-      res
-        .status(502)
-        .json({ error: 'Model output was not valid JSON or missing fields' })
+      res.status(502).json({
+        error:
+          'Model output invalid or missing fields. Got: ' +
+          text.slice(0, 500),
+      })
       return
     }
 
