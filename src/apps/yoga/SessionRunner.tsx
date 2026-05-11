@@ -225,8 +225,21 @@ export default function SessionRunner({
               <h2 className="mt-2 max-w-2xl text-3xl font-bold leading-tight sm:text-4xl">
                 {poseName(current.poseId)}
               </h2>
+              <a
+                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(
+                  poseName(current.poseId) + ' yoga tutorial',
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[12px] font-semibold text-white/95 backdrop-blur transition hover:bg-white/25"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden>
+                  <path fill="currentColor" d="M8 5v14l11-7L8 5z" />
+                </svg>
+                Watch tutorial
+              </a>
               {current.cue && (
-                <p className="mt-2 max-w-md text-[14px] leading-relaxed text-white/85">
+                <p className="mt-3 max-w-md text-[14px] leading-relaxed text-white/85">
                   {current.cue}
                 </p>
               )}

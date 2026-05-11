@@ -502,6 +502,19 @@ function PoseRow({
               </div>
             )}
             <PoseInfo name={pose.name} />
+            <a
+              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(
+                pose.name + ' yoga tutorial',
+              )}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 self-start rounded-lg bg-red-600 px-3 py-2 text-[13px] font-semibold text-white transition hover:bg-red-700"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
+                <path fill="currentColor" d="M8 5v14l11-7L8 5z" />
+              </svg>
+              Watch on YouTube
+            </a>
             <AIDiagram
               poseName={pose.name}
               imageUrl={pose.imageUrl}
