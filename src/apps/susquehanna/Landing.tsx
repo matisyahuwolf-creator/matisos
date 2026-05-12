@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import ChatWidget from './ChatWidget'
 
 const SCOPED_STYLES = `
   #susq-landing { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; color: #221d16; }
@@ -75,6 +76,11 @@ const SCOPED_STYLES = `
   #susq-landing .reveal.in { opacity: 1; transform: none; }
 
   #susq-landing { scroll-behavior: smooth; }
+
+  @keyframes susq-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+    40% { transform: translateY(-4px); opacity: 1; }
+  }
 `
 
 export default function Landing({ onClose }: { onClose: () => void }) {
@@ -623,6 +629,9 @@ export default function Landing({ onClose }: { onClose: () => void }) {
           </div>
         </div>
       </footer>
+
+      {/* Live AI chat — both info assistant and product demo */}
+      <ChatWidget />
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import Hyrogliphics from './apps/hyrogliphics/Hyrogliphics'
+import Initiation from './apps/initiation/Initiation'
 import Pardes from './apps/pardes/Pardes'
 import Scratch from './apps/scratch/Scratch'
 import Susquehanna from './apps/susquehanna/Susquehanna'
@@ -45,6 +46,19 @@ export const apps: AppEntry[] = [
     gradient: 'from-emerald-400 via-teal-500 to-cyan-600',
     category: 'Wellness',
     component: Yoga,
+  },
+  {
+    kind: 'internal',
+    slug: 'initiation',
+    name: 'Initiation',
+    tagline: 'Open research, in common.',
+    description:
+      'A free commons for research into AI safety, consciousness, and the meeting of East and West. Free, open-source, unowned.',
+    icon: '○',
+    status: 'live',
+    gradient: 'from-stone-200 via-stone-300 to-stone-500',
+    category: 'Tools',
+    component: Initiation,
   },
   {
     kind: 'internal',

@@ -129,6 +129,17 @@ export default function Susquehanna() {
               for the first ten NEPA restaurants, plus a contact form.
             </span>
           </li>
+          <li className="flex items-start gap-2.5">
+            <span className="mt-2 inline-block h-px w-3 bg-[#5f7549]" />
+            <span>
+              <span className="font-semibold text-slate-900">
+                Live AI assistant
+              </span>{' '}
+              built into the page itself — answers questions about Susquehanna
+              and role-plays as a restaurant chatbot on demand. The product
+              demos itself.
+            </span>
+          </li>
         </ul>
       </section>
 

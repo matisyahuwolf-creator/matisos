@@ -209,6 +209,22 @@ a:focus-visible {
   animation: gradientShift 14s ease-in-out infinite;
 }
 
+@utility hg-gold-text {
+  background-image: linear-gradient(
+    100deg,
+    #8b6914 0%,
+    #c9a14a 30%,
+    #f3deaa 50%,
+    #c9a14a 70%,
+    #8b6914 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradientShift 9s linear infinite;
+}
+
 /* ─── Shadows ───────────────────────────────────────────────────────── */
 
 @utility shadow-card {

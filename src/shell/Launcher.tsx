@@ -2,27 +2,21 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { apps, type AppEntry } from '../apps'
 
-function todayLabel() {
-  return new Date()
-    .toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-    })
-    .toUpperCase()
+function timeOfDayGreeting() {
+  const h = new Date().getHours()
+  if (h < 5) return 'Up late'
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  if (h < 21) return 'Good evening'
+  return 'Good evening'
 }
 
-function categoryTone(category: string): string {
-  switch (category) {
-    case 'Wellness':
-      return 'bg-emerald-100 text-emerald-700'
-    case 'Tools':
-      return 'bg-amber-100 text-amber-700'
-    case 'Meta':
-      return 'bg-slate-100 text-slate-600'
-    default:
-      return 'bg-slate-100 text-slate-600'
-  }
+function dateLabel() {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })
 }
 
 function isOpenable(app: AppEntry) {
@@ -45,12 +39,7 @@ function AppLink({
   }
   if (app.kind === 'external') {
     return (
-      <a
-        href={app.url}
-        target="_blank"
-        rel="noreferrer"
-        className={className}
-      >
+      <a href={app.url} target="_blank" rel="noreferrer" className={className}>
         {children}
       </a>
     )
@@ -62,139 +51,77 @@ function AppLink({
   )
 }
 
-function HeroCard({ app }: { app: AppEntry }) {
-  const openable = isOpenable(app)
-  return (
-    <AppLink
-      app={app}
-      className={`psychedelic-shimmer group relative block overflow-hidden rounded-[24px] bg-gradient-to-br ${app.gradient} shadow-hero press ${
-        openable ? 'hover:-translate-y-0.5 active:scale-[0.99] active:translate-y-0' : ''
-      }`}
-    >
-      <div className="flex min-h-[460px] flex-col p-6 sm:p-8">
-        <div className="flex-1">
-          <h2 className="text-[40px] font-extrabold leading-[1.05] tracking-tight text-white sm:text-[48px]">
-            {app.name}
-          </h2>
-          <p className="mt-2 max-w-md font-display text-[18px] italic leading-snug text-white/95 sm:text-[20px]">
-            {app.tagline}
-          </p>
-          <p className="mt-4 max-w-md text-base leading-relaxed text-white/85">
-            {app.description}
-          </p>
-        </div>
-
-        <div className="mt-8 flex items-center gap-3 rounded-2xl bg-white/95 p-3 shadow-sm backdrop-blur">
-          <div
-            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-gradient-to-br ${app.gradient} text-2xl shadow-md`}
-          >
-            <span>{app.icon}</span>
-          </div>
-          <div className="min-w-0 flex-1 text-left">
-            <p className="truncate text-[15px] font-semibold text-slate-900">
-              {app.name}
-            </p>
-            <p className="truncate text-xs text-slate-500">{app.tagline}</p>
-          </div>
-          <span className="rounded-full bg-[#0071e3] px-4 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white">
-            {openable ? 'Open' : 'Soon'}
-          </span>
-        </div>
-      </div>
-    </AppLink>
+function pickFeatured(): AppEntry {
+  // Prefer internal app, first live one
+  const internal = apps.find(
+    (a) => a.kind === 'internal' && a.status === 'live',
   )
+  return internal ?? apps[0]
 }
 
-function AppRow({ app, isLast }: { app: AppEntry; isLast: boolean }) {
-  const openable = isOpenable(app)
-  return (
-    <>
-      <AppLink
-        app={app}
-        className={`flex items-center gap-3 px-4 py-3 press ${
-          openable
-            ? 'cursor-pointer hover:bg-slate-50 active:bg-slate-100'
-            : 'cursor-default opacity-60'
-        }`}
-      >
-        <div
-          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] bg-gradient-to-br ${app.gradient} text-[26px] shadow-sm`}
-        >
-          <span>{app.icon}</span>
-        </div>
-        <div className="min-w-0 flex-1 text-left">
-          <div className="flex items-center gap-2">
-            <p className="truncate text-[15px] font-semibold text-slate-900">
-              {app.name}
-            </p>
-            <span
-              className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${categoryTone(app.category)}`}
-            >
-              {app.category}
-            </span>
-          </div>
-          <p className="truncate text-[13px] text-slate-500">{app.tagline}</p>
-        </div>
-        <span
-          className={`rounded-full px-4 py-1.5 text-[11px] font-bold uppercase tracking-wide ${
-            openable ? 'bg-slate-100 text-[#0071e3]' : 'bg-slate-100 text-slate-400'
-          }`}
-        >
-          {openable ? 'Open' : 'Soon'}
-        </span>
-      </AppLink>
-      {!isLast && <div className="ml-[76px] h-px bg-slate-200/70" />}
-    </>
-  )
+const RECENT_KEY = 'matisos:recent-app'
+
+function loadRecentSlug(): string | null {
+  try {
+    return localStorage.getItem(RECENT_KEY)
+  } catch {
+    return null
+  }
+}
+
+function pickToday(): AppEntry {
+  const recent = loadRecentSlug()
+  if (recent) {
+    const found = apps.find(
+      (a) =>
+        a.kind === 'internal' && a.slug === recent && a.status === 'live',
+    )
+    if (found) return found
+  }
+  return pickFeatured()
 }
 
 export default function Launcher() {
+  const today = useMemo(pickToday, [])
   const [query, setQuery] = useState('')
 
-  const featured = apps[0]
-  const restApps = apps.slice(1)
-
-  const filteredRest = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return restApps
-    return restApps.filter(
-      (a) =>
-        a.name.toLowerCase().includes(q) ||
-        a.tagline.toLowerCase().includes(q) ||
-        a.description.toLowerCase().includes(q),
-    )
-  }, [query, restApps])
-
-  const liveCount = apps.filter((a) => a.status === 'live').length
-  const wipCount = apps.filter((a) => a.status === 'wip').length
+  const liveApps = apps.filter((a) => a.status === 'live')
+  const filteredApps = liveApps.filter(
+    (a) =>
+      !query.trim() ||
+      a.name.toLowerCase().includes(query.toLowerCase()) ||
+      a.tagline.toLowerCase().includes(query.toLowerCase()) ||
+      a.category.toLowerCase().includes(query.toLowerCase()),
+  )
 
   return (
-    <div className="min-h-screen bg-[#f2f2f7] text-slate-900 antialiased">
-      <div className="mx-auto max-w-2xl px-4 pt-8 pb-16 sm:px-5 sm:pt-12">
+    <div className="relative min-h-screen overflow-hidden text-slate-100">
+      <Wallpaper />
+
+      <div className="relative mx-auto max-w-3xl px-5 pt-12 pb-16 sm:px-6 sm:pt-16">
         <header
-          className="mb-8 px-1 animate-fade-up"
+          className="mb-8 animate-fade-up"
           style={{ animationDelay: '0ms' }}
         >
-          <p className="ornament text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700/90">
-            Personal Toolkit
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/55">
+            {dateLabel()}
           </p>
-          <h1 className="mt-3 font-display gradient-text text-[64px] italic font-medium leading-[0.95] sm:text-[88px]">
-            matisOS
+          <h1 className="mt-1 font-display text-[44px] italic font-medium leading-[1.04] tracking-tight text-white sm:text-[60px]">
+            {timeOfDayGreeting()}, <span className="hg-gold-text">matis</span>.
           </h1>
-          <p className="mt-4 max-w-md font-display text-[18px] italic leading-snug text-slate-700 sm:text-[20px]">
-            A home for everything I'm building. Tools, practices, and the
-            occasional experiment.
-          </p>
-          <p className="mt-4 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
-            {todayLabel()}
+          <p className="mt-3 max-w-md font-display text-[16px] italic leading-snug text-white/65 sm:text-[18px]">
+            A home for everything you're building. Pick what calls.
           </p>
         </header>
 
         <section
-          className="mb-12 animate-fade-up"
+          className="mb-10 animate-fade-up"
           style={{ animationDelay: '80ms' }}
         >
-          <HeroCard app={featured} />
+          <p className="mb-2 px-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white/50">
+            For you · {loadRecentSlug() ? 'where you left off' : 'featured'}
+          </p>
+          <TodayCard app={today} />
         </section>
 
         <section
@@ -202,21 +129,21 @@ export default function Launcher() {
           style={{ animationDelay: '180ms' }}
         >
           <div className="mb-4 flex items-baseline justify-between px-1">
-            <h2 className="font-display text-[28px] italic font-medium leading-none tracking-tight text-slate-900 sm:text-[32px]">
-              Your Toolkit
+            <h2 className="font-display text-[24px] italic font-medium leading-none tracking-tight text-white sm:text-[28px]">
+              All apps
             </h2>
-            <span className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-500">
-              {apps.length} {apps.length === 1 ? 'app' : 'apps'}
+            <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/45">
+              {liveApps.length} live
             </span>
           </div>
 
-          <div className="mb-3 px-1">
-            <label className="flex items-center gap-2 rounded-xl bg-slate-200/70 px-3 py-2">
+          <div className="mb-5 px-1">
+            <label className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-3.5 py-2.5 backdrop-blur">
               <svg
-                width="16"
-                height="16"
+                width="15"
+                height="15"
                 viewBox="0 0 16 16"
-                className="text-slate-500"
+                className="text-white/55"
                 aria-hidden
               >
                 <path
@@ -226,40 +153,133 @@ export default function Launcher() {
               </svg>
               <input
                 type="search"
-                placeholder="Search"
+                placeholder="Search apps"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="flex-1 bg-transparent text-[15px] outline-none placeholder:text-slate-500"
+                className="flex-1 bg-transparent text-[14px] text-white outline-none placeholder:text-white/50"
               />
             </label>
           </div>
 
-          <div className="overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-black/5">
-            {filteredRest.length === 0 ? (
-              <p className="px-4 py-10 text-center text-sm text-slate-500">
-                No apps match "{query}".
+          <div className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-4">
+            {filteredApps.map((app) => (
+              <IconTile key={app.name} app={app} />
+            ))}
+            {filteredApps.length === 0 && (
+              <p className="col-span-full text-center text-[13px] text-white/55">
+                Nothing matches "{query}".
               </p>
-            ) : (
-              filteredRest.map((app, i) => (
-                <AppRow
-                  key={app.name}
-                  app={app}
-                  isLast={i === filteredRest.length - 1}
-                />
-              ))
             )}
           </div>
         </section>
 
-        <footer className="mt-14 flex items-center justify-between border-t border-amber-900/15 px-1 pt-5 text-[11px] uppercase tracking-[0.16em] text-slate-500">
-          <span className="font-display text-[13px] italic normal-case tracking-normal text-slate-600">
+        <footer className="mt-14 flex items-center justify-between border-t border-white/10 px-1 pt-5 text-[11px] uppercase tracking-[0.16em] text-white/40">
+          <span className="font-display text-[13px] italic normal-case tracking-normal text-white/55">
             matis · {new Date().getFullYear()}
           </span>
-          <span>
-            {liveCount} live{wipCount > 0 ? ` · ${wipCount} in progress` : ''}
-          </span>
+          <span>matisOS</span>
         </footer>
       </div>
     </div>
+  )
+}
+
+function Wallpaper() {
+  return (
+    <>
+      <div className="fixed inset-0 -z-10 bg-[#0a0612]" />
+      <div
+        className="pointer-events-none fixed inset-0 -z-10 opacity-90"
+        style={{
+          backgroundImage: `
+            radial-gradient(at 18% 22%, rgba(124, 92, 255, 0.38), transparent 50%),
+            radial-gradient(at 82% 18%, rgba(217, 70, 239, 0.32), transparent 50%),
+            radial-gradient(at 50% 95%, rgba(245, 158, 11, 0.22), transparent 55%),
+            radial-gradient(at 92% 78%, rgba(6, 182, 212, 0.22), transparent 50%)
+          `,
+          animation: 'pardesShift 32s ease-in-out infinite',
+        }}
+      />
+      <div
+        className="pointer-events-none fixed inset-0 -z-10"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 50% 50%, transparent 0%, rgba(10,6,18,0.45) 100%)',
+        }}
+      />
+    </>
+  )
+}
+
+function TodayCard({ app }: { app: AppEntry }) {
+  const openable = isOpenable(app)
+  return (
+    <AppLink
+      app={app}
+      className={`psychedelic-shimmer group relative block overflow-hidden rounded-[24px] bg-gradient-to-br ${app.gradient} shadow-hero press ${
+        openable
+          ? 'hover:-translate-y-0.5 active:scale-[0.99] active:translate-y-0'
+          : ''
+      }`}
+    >
+      <div className="flex min-h-[200px] flex-col p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <span className="text-[42px] leading-none drop-shadow-lg sm:text-[52px]">
+            {app.icon}
+          </span>
+          <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur">
+            {app.category}
+          </span>
+        </div>
+        <div className="mt-4 flex-1">
+          <h3 className="text-[28px] font-bold leading-tight tracking-tight text-white sm:text-[32px]">
+            {app.name}
+          </h3>
+          <p className="mt-2 max-w-md font-display text-[15px] italic leading-snug text-white/95 sm:text-[17px]">
+            {app.tagline}
+          </p>
+        </div>
+        <div className="mt-5 flex items-center justify-between rounded-xl bg-white/15 px-3.5 py-2.5 text-[12px] font-bold uppercase tracking-[0.14em] text-white backdrop-blur">
+          <span>Open</span>
+          <span className="text-base">→</span>
+        </div>
+      </div>
+    </AppLink>
+  )
+}
+
+function IconTile({ app }: { app: AppEntry }) {
+  const openable = isOpenable(app)
+  function handleClick() {
+    if (app.kind === 'internal' && openable) {
+      try {
+        localStorage.setItem(RECENT_KEY, app.slug)
+      } catch {
+        // ignored
+      }
+    }
+  }
+  return (
+    <AppLink
+      app={app}
+      className="group flex flex-col items-center gap-2"
+    >
+      <div
+        onClick={handleClick}
+        className={`relative flex h-[72px] w-[72px] items-center justify-center rounded-[20px] bg-gradient-to-br ${app.gradient} text-[34px] shadow-[0_8px_24px_-8px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.1)_inset] transition-transform duration-200 group-hover:-translate-y-0.5 group-active:scale-[0.95] sm:h-[80px] sm:w-[80px] sm:text-[38px] ${
+          !openable ? 'opacity-50 grayscale' : ''
+        }`}
+      >
+        <span className="drop-shadow-md">{app.icon}</span>
+      </div>
+      <div className="text-center">
+        <p className="text-[12px] font-semibold text-white sm:text-[13px]">
+          {app.name}
+        </p>
+        <p className="text-[10px] uppercase tracking-wider text-white/45">
+          {app.category}
+        </p>
+      </div>
+    </AppLink>
   )
 }
