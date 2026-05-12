@@ -3,6 +3,7 @@ import { catalog } from './catalog'
 import type { Session, SessionStep } from './sessions'
 import { poseImageUrl } from './pose-images'
 import { storage } from '../../lib/storage'
+import { recordCompletion } from './history'
 
 const AUDIO_KEY = 'yoga:audio-enabled'
 const MUSIC_KEY = 'yoga:music-enabled'
@@ -92,8 +93,8 @@ const STEP_GRADIENTS = [
   'from-green-600 via-emerald-600 to-teal-700',
 ]
 
-// A minor pentatonic scale, low octave — meditative and consonant
-const STEP_FREQUENCIES = [110, 130.81, 146.83, 164.81, 196, 220, 246.94]
+// Warm low-octave pentatonic — calm, not ringing
+const STEP_FREQUENCIES = [55, 65.41, 73.42, 82.41, 98, 110, 123.47]
 
 type FlatStep = SessionStep & { side?: 1 | 2; totalSides: number }
 
@@ -177,25 +178,37 @@ export default function SessionRunner({
       }
       const masterGain = ctx.createGain()
       masterGain.gain.setValueAtTime(0, ctx.currentTime)
-      masterGain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 2.5)
+      masterGain.gain.linearRampToValueAtTime(0.028, ctx.currentTime + 3.5)
       masterGain.connect(ctx.destination)
-      const fundamental = 110
+      const fundamental = 65
+      // Soft low-pass to round the tone, less "ringing"
+      const filter = ctx.createBiquadFilter()
+      filter.type = 'lowpass'
+      filter.frequency.value = 400
+      filter.Q.value = 0.4
+      filter.connect(masterGain)
       const osc1 = ctx.createOscillator()
       osc1.type = 'sine'
       osc1.frequency.value = fundamental
-      osc1.connect(masterGain)
+      osc1.connect(filter)
+      const osc2Gain = ctx.createGain()
+      osc2Gain.gain.value = 0.6 // lower the octave's relative volume
+      osc2Gain.connect(filter)
       const osc2 = ctx.createOscillator()
       osc2.type = 'sine'
-      osc2.frequency.value = fundamental * 1.5
-      osc2.connect(masterGain)
+      osc2.frequency.value = fundamental * 2
+      osc2.connect(osc2Gain)
+      const osc3Gain = ctx.createGain()
+      osc3Gain.gain.value = 0.25 // very subtle fifth
+      osc3Gain.connect(filter)
       const osc3 = ctx.createOscillator()
       osc3.type = 'sine'
-      osc3.frequency.value = fundamental * 2
-      osc3.connect(masterGain)
+      osc3.frequency.value = fundamental * 3
+      osc3.connect(osc3Gain)
       const lfo = ctx.createOscillator()
-      lfo.frequency.value = 0.08
+      lfo.frequency.value = 0.05
       const lfoGain = ctx.createGain()
-      lfoGain.gain.value = 1.8
+      lfoGain.gain.value = 0.7
       lfo.connect(lfoGain)
       lfoGain.connect(osc1.frequency)
       lfoGain.connect(osc2.frequency)
@@ -302,17 +315,43 @@ export default function SessionRunner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [musicEnabled, paused, isComplete])
 
+  // Auto-pause when the tab is hidden (e.g. user taps Watch tutorial)
+  useEffect(() => {
+    const handler = () => {
+      if (document.hidden && !isComplete) {
+        setPaused(true)
+      }
+    }
+    document.addEventListener('visibilitychange', handler)
+    return () => document.removeEventListener('visibilitychange', handler)
+  }, [isComplete])
+
+  // Record completion to history once when session ends
+  const recordedRef = useRef(false)
+  useEffect(() => {
+    if (isComplete && !recordedRef.current) {
+      recordedRef.current = true
+      const totalSec = flat.reduce((acc, s) => acc + s.durationSec, 0)
+      recordCompletion({
+        sessionId: session.id,
+        sessionName: session.name,
+        durationSec: totalSec,
+        completedAt: Date.now(),
+      })
+    }
+  }, [isComplete, flat, session])
+
   useEffect(() => {
     const drone = droneRef.current
     const ctx = audioCtxRef.current
     if (!drone || !ctx) return
     const fundamental = STEP_FREQUENCIES[index % STEP_FREQUENCIES.length]
     const now = ctx.currentTime
-    const rampTime = 2.5
+    const rampTime = 3.5
     const targets: [OscillatorNode, number][] = [
       [drone.osc1, fundamental],
-      [drone.osc2, fundamental * 1.5],
-      [drone.osc3, fundamental * 2],
+      [drone.osc2, fundamental * 2],
+      [drone.osc3, fundamental * 3],
     ]
     for (const [osc, target] of targets) {
       try {

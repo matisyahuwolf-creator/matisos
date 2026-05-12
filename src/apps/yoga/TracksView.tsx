@@ -8,6 +8,9 @@ import {
   type TrackPhase,
 } from './tracks'
 import { sessions } from './sessions'
+import { countSessionsInWindow, loadHistory } from './history'
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
 type ActiveTrackState = {
   trackId: string
@@ -184,6 +187,62 @@ function TrackCard({
   )
 }
 
+function SkillPointsBar({
+  track,
+  state,
+  phase,
+}: {
+  track: Track
+  state: ActiveTrackState
+  phase: TrackPhase
+}) {
+  const earned = useMemo(() => {
+    const history = loadHistory()
+    const since = state.startedAt
+    return history.filter((h) => h.completedAt >= since).length
+  }, [state.startedAt])
+
+  // Phase goal: each phase has a target number of sessions (3 sessions/wk × weeks)
+  const phaseGoal = phase.weeks * 3
+  const phasesBefore = track.phases.slice(
+    0,
+    track.phases.findIndex((p) => p.id === phase.id),
+  )
+  const prevPhaseGoals = phasesBefore.reduce(
+    (sum, p) => sum + p.weeks * 3,
+    0,
+  )
+  const earnedInPhase = Math.max(0, earned - prevPhaseGoals)
+  const pct = Math.min(100, (earnedInPhase / phaseGoal) * 100)
+
+  return (
+    <div className="rounded-xl bg-gradient-to-br from-amber-50 via-rose-50 to-violet-50 px-3 py-3 ring-1 ring-amber-200/40">
+      <div className="flex items-baseline justify-between">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-800">
+          Skill points · {phase.name}
+        </p>
+        <p className="text-[13px] font-bold text-slate-900">
+          {earnedInPhase}{' '}
+          <span className="text-[11px] font-medium text-slate-500">
+            / {phaseGoal}
+          </span>
+        </p>
+      </div>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/70">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-amber-400 via-rose-400 to-violet-500 transition-all duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="mt-1.5 text-[11px] text-slate-600">
+        {earnedInPhase >= phaseGoal
+          ? "You've reached this phase's goal. Move on whenever you're ready."
+          : `${phaseGoal - earnedInPhase} sessions to reach this phase's goal.`}
+      </p>
+    </div>
+  )
+}
+
 function ActiveTrackPanel({
   track,
   state,
@@ -271,16 +330,25 @@ function ActiveTrackPanel({
       </div>
 
       <div className="p-4">
-        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+        <SkillPointsBar track={track} state={state} phase={phase} />
+        <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
           This week’s mix · {phase.weeklyMinutes}
         </p>
         <ul className="mt-2 flex flex-col gap-2">
           {phase.weeklyMix.map((mix) => {
             const meta = sessionMeta(mix.sessionId)
+            const completedThisWeek = countSessionsInWindow(
+              mix.sessionId,
+              WEEK_MS,
+            )
+            const done = Math.min(completedThisWeek, mix.perWeek)
+            const isDone = done >= mix.perWeek
             return (
               <li
                 key={mix.sessionId}
-                className="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2"
+                className={`flex items-center gap-3 rounded-xl px-3 py-2 transition ${
+                  isDone ? 'bg-emerald-50' : 'bg-slate-50'
+                }`}
               >
                 <div
                   className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br ${meta.gradient} text-lg`}
@@ -292,15 +360,33 @@ function ActiveTrackPanel({
                     {meta.name}
                   </p>
                   <p className="truncate text-[11px] text-slate-500">
-                    {meta.durationMin} min · {mix.perWeek}×/week
+                    {meta.durationMin} min · {done}/{mix.perWeek} this week
                   </p>
                 </div>
+                {isDone ? (
+                  <span className="shrink-0 text-emerald-600" aria-label="done">
+                    <svg width="20" height="20" viewBox="0 0 20 20">
+                      <path
+                        d="M4 10l4 4 8-8"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                ) : (
+                  <span className="shrink-0 text-[11px] font-bold text-slate-400">
+                    {mix.perWeek - done} to go
+                  </span>
+                )}
               </li>
             )
           })}
         </ul>
         <p className="mt-3 px-1 text-[11px] text-slate-400">
-          Scroll to the Sessions section below to start any of these.
+          Tap a session in the Sessions tab — completed sessions check off here automatically.
         </p>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { storage } from '../../lib/storage'
 import { sessions, type Session } from './sessions'
 import { phaseFor, phaseStartWeek, tracks } from './tracks'
 import SessionRunner from './SessionRunner'
+import { historyStats, loadHistory } from './history'
 
 type ActiveTrackState = {
   trackId: string
@@ -153,6 +154,8 @@ export default function Today({ stats, onSwitchTab }: TodayProps) {
         </div>
       </button>
 
+      <PracticeDashboard />
+
       <div className="flex items-stretch rounded-xl bg-white px-2 py-3 ring-1 ring-black/5">
         <StatBlock value={stats.working} label="Working on" />
         <Divider />
@@ -193,4 +196,54 @@ function StatBlock({ value, label }: { value: number; label: string }) {
 
 function Divider() {
   return <div className="self-center h-8 w-px bg-slate-200" />
+}
+
+function PracticeDashboard() {
+  const history = useMemo(loadHistory, [])
+  if (history.length === 0) return null
+  const stats = historyStats(history)
+  const totalMin = Math.round(stats.totalSec / 60)
+  const weekMin = Math.round(stats.weekSec / 60)
+  const last = stats.lastAt ? new Date(stats.lastAt) : null
+  function lastLabel(d: Date): string {
+    const diff = Date.now() - d.getTime()
+    const day = 24 * 60 * 60 * 1000
+    if (diff < day && d.toDateString() === new Date().toDateString()) {
+      return 'today'
+    }
+    if (diff < 2 * day) return 'yesterday'
+    return d.toLocaleDateString('en-US', { weekday: 'long' })
+  }
+  return (
+    <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/5">
+      <div className="border-b border-slate-100 px-4 py-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+          Practice
+        </p>
+        <h3 className="mt-0.5 font-display text-[20px] italic text-slate-900">
+          You showed up {stats.total} {stats.total === 1 ? 'time' : 'times'}.
+        </h3>
+      </div>
+      <div className="grid grid-cols-3 divide-x divide-slate-100">
+        <DashStat value={stats.thisWeek} label="this week" />
+        <DashStat value={stats.streak} label="day streak" />
+        <DashStat value={weekMin > 0 ? `${weekMin}m` : '—'} label="this week" />
+      </div>
+      <div className="border-t border-slate-100 bg-slate-50 px-4 py-2.5 text-[12px] text-slate-600">
+        Total · {totalMin} min across {stats.total} sessions
+        {last && ` · Last: ${lastLabel(last)}`}
+      </div>
+    </div>
+  )
+}
+
+function DashStat({ value, label }: { value: number | string; label: string }) {
+  return (
+    <div className="px-3 py-3 text-center">
+      <p className="text-2xl font-bold leading-none text-slate-900">{value}</p>
+      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+        {label}
+      </p>
+    </div>
+  )
 }
