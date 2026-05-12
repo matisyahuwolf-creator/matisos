@@ -115,7 +115,7 @@ export const SKILLS: Record<SkillId, SkillMeta> = {
   },
 }
 
-function poseSkills(poseId: string): Partial<Record<SkillId, number>> {
+export function skillsForPose(poseId: string): Partial<Record<SkillId, number>> {
   const pose = catalog.find((p) => p.id === poseId)
   const name = (pose?.name ?? poseId).toLowerCase()
   const skills: Partial<Record<SkillId, number>> = { embodiment: 1 }
@@ -183,7 +183,7 @@ export function calculateSessionSkills(
 ): Partial<Record<SkillId, number>> {
   const totals: Partial<Record<SkillId, number>> = {}
   for (const poseId of poseIds) {
-    const s = poseSkills(poseId)
+    const s = skillsForPose(poseId)
     for (const [skillId, pts] of Object.entries(s)) {
       const id = skillId as SkillId
       totals[id] = (totals[id] ?? 0) + (pts ?? 0)

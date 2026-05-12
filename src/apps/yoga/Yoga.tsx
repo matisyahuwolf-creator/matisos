@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { storage } from '../../lib/storage'
 import PoseInfo from './PoseInfo'
 import AIDiagram from './AIDiagram'
+import { SKILLS, skillsForPose, type SkillId } from './skills'
 import SessionsView from './SessionsView'
 import TracksView from './TracksView'
 import Today, { type TabKey } from './Today'
 import Coach from './Coach'
+import SkillsView from './SkillsView'
 import { catalog, type Difficulty } from './catalog'
 
 type Status = 'library' | 'learning' | 'mastered'
@@ -201,6 +203,8 @@ export default function Yoga() {
 
       {tab === 'coach' && <Coach />}
 
+      {tab === 'skills' && <SkillsView />}
+
       {tab === 'programs' && <TracksView />}
 
       {tab === 'sessions' && <SessionsView />}
@@ -325,6 +329,7 @@ export default function Yoga() {
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'coach', label: 'Begin' },
+  { key: 'skills', label: 'Skills' },
   { key: 'today', label: 'Today' },
   { key: 'programs', label: 'Programs' },
   { key: 'sessions', label: 'Sessions' },
@@ -530,6 +535,7 @@ function PoseRow({
                 {pose.benefits}
               </div>
             )}
+            <PoseSkillChips poseId={pose.id} />
             <PoseInfo name={pose.name} />
             <a
               href={`https://www.youtube.com/results?search_query=${encodeURIComponent(
@@ -570,5 +576,33 @@ function PoseRow({
       </div>
       {!isLast && <div className="ml-[60px] h-px bg-slate-200/70" />}
     </>
+  )
+}
+
+function PoseSkillChips({ poseId }: { poseId: string }) {
+  const skills = (Object.entries(skillsForPose(poseId)) as [SkillId, number][])
+    .filter(([, p]) => p > 0)
+    .sort((a, b) => b[1] - a[1])
+  if (skills.length === 0) return null
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <p className="mr-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+        Skills earned
+      </p>
+      {skills.map(([id, pts]) => {
+        const meta = SKILLS[id]
+        return (
+          <span
+            key={id}
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${meta.bg} ${meta.text}`}
+            title={meta.meaning}
+          >
+            <span>{meta.emoji}</span>
+            <span>{meta.name}</span>
+            <span className="opacity-70">+{pts}</span>
+          </span>
+        )
+      })}
+    </div>
   )
 }
