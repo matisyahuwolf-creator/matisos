@@ -4,6 +4,7 @@ import { sessions, type Session } from './sessions'
 import { phaseFor, phaseStartWeek, tracks } from './tracks'
 import SessionRunner from './SessionRunner'
 import { historyStats, loadHistory } from './history'
+import { topSkills, totalSkillPoints } from './skills'
 
 type ActiveTrackState = {
   trackId: string
@@ -203,7 +204,8 @@ function PracticeDashboard() {
   if (history.length === 0) return null
   const stats = historyStats(history)
   const totalMin = Math.round(stats.totalSec / 60)
-  const weekMin = Math.round(stats.weekSec / 60)
+  const points = totalSkillPoints()
+  const skills = topSkills(undefined, 4)
   const last = stats.lastAt ? new Date(stats.lastAt) : null
   function lastLabel(d: Date): string {
     const diff = Date.now() - d.getTime()
@@ -227,8 +229,36 @@ function PracticeDashboard() {
       <div className="grid grid-cols-3 divide-x divide-slate-100">
         <DashStat value={stats.thisWeek} label="this week" />
         <DashStat value={stats.streak} label="day streak" />
-        <DashStat value={weekMin > 0 ? `${weekMin}m` : '—'} label="this week" />
+        <DashStat value={points} label="skill points" />
       </div>
+      {skills.length > 0 && (
+        <div className="border-t border-slate-100 px-4 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+            Top skills developing
+          </p>
+          <ul className="mt-2 flex flex-col gap-1.5">
+            {skills.map(({ skill, points }) => (
+              <li key={skill.id} className="flex items-center gap-2">
+                <span
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-base ${skill.bg}`}
+                >
+                  {skill.emoji}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-semibold text-slate-900">
+                    {skill.name}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${skill.bg} ${skill.text}`}
+                >
+                  {points} pts
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="border-t border-slate-100 bg-slate-50 px-4 py-2.5 text-[12px] text-slate-600">
         Total · {totalMin} min across {stats.total} sessions
         {last && ` · Last: ${lastLabel(last)}`}

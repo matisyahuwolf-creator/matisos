@@ -3,7 +3,16 @@ import { catalog } from './catalog'
 import type { Session, SessionStep } from './sessions'
 import { poseImageUrl } from './pose-images'
 import { storage } from '../../lib/storage'
-import { recordCompletion } from './history'
+import { recordCompletion, historyStats } from './history'
+import { getNextSessionInProgram } from './tracks'
+import {
+  SKILLS,
+  type SkillId,
+  type SkillMeta,
+  addSkillPoints,
+  calculateSessionSkills,
+  totalSkillPoints,
+} from './skills'
 
 const AUDIO_KEY = 'yoga:audio-enabled'
 const MUSIC_KEY = 'yoga:music-enabled'
@@ -112,15 +121,20 @@ function flatten(session: Session): FlatStep[] {
 }
 
 export default function SessionRunner({
-  session,
+  session: initialSession,
   onClose,
 }: {
   session: Session
   onClose: () => void
 }) {
+  const [session, setSession] = useState<Session>(initialSession)
   const flat = useMemo(() => flatten(session), [session])
   const [index, setIndex] = useState(0)
   const [remaining, setRemaining] = useState(flat[0]?.durationSec ?? 0)
+  const [earnedSkills, setEarnedSkills] = useState<Partial<Record<SkillId, number>>>({})
+  const [totalSessions, setTotalSessions] = useState<number>(0)
+  const [totalPoints, setTotalPoints] = useState<number>(0)
+  const [nextProgramSession, setNextProgramSession] = useState<Session | null>(null)
   const [paused, setPaused] = useState(false)
   const [audioEnabled, setAudioEnabled] = useState<boolean>(() => loadAudioPref())
   const [musicEnabled, setMusicEnabled] = useState<boolean>(() => loadMusicPref())
@@ -326,11 +340,11 @@ export default function SessionRunner({
     return () => document.removeEventListener('visibilitychange', handler)
   }, [isComplete])
 
-  // Record completion to history once when session ends
-  const recordedRef = useRef(false)
+  // Record completion to history + apply skills + find next program session
+  const recordedRef = useRef<Set<string>>(new Set())
   useEffect(() => {
-    if (isComplete && !recordedRef.current) {
-      recordedRef.current = true
+    if (isComplete && !recordedRef.current.has(session.id)) {
+      recordedRef.current.add(session.id)
       const totalSec = flat.reduce((acc, s) => acc + s.durationSec, 0)
       recordCompletion({
         sessionId: session.id,
@@ -338,8 +352,24 @@ export default function SessionRunner({
         durationSec: totalSec,
         completedAt: Date.now(),
       })
+      const earned = calculateSessionSkills(flat.map((s) => s.poseId))
+      addSkillPoints(earned)
+      setEarnedSkills(earned)
+      const stats = historyStats()
+      setTotalSessions(stats.total)
+      setTotalPoints(totalSkillPoints())
+      setNextProgramSession(getNextSessionInProgram(session.id))
     }
   }, [isComplete, flat, session])
+
+  function loadNextSession(next: Session) {
+    setSession(next)
+    setIndex(0)
+    setRemaining(next.steps[0]?.durationSec ?? 0)
+    setPaused(false)
+    setEarnedSkills({})
+    setNextProgramSession(null)
+  }
 
   useEffect(() => {
     const drone = droneRef.current
@@ -501,21 +531,16 @@ export default function SessionRunner({
 
         <div className="flex flex-1 flex-col items-center justify-center text-center">
           {isComplete ? (
-            <>
-              <p className="text-6xl">✓</p>
-              <h2 className="mt-4 text-3xl font-bold sm:text-4xl">
-                Session complete
-              </h2>
-              <p className="mt-3 max-w-md text-white/80">
-                {session.steps.length} steps · {session.durationMin} min
-              </p>
-              <button
-                onClick={onClose}
-                className="mt-8 rounded-full bg-white px-8 py-3 font-semibold text-slate-900 transition hover:bg-white/90"
-              >
-                Done
-              </button>
-            </>
+            <CompletionScreen
+              earned={earnedSkills}
+              totalSessions={totalSessions}
+              totalPoints={totalPoints}
+              nextSession={nextProgramSession}
+              onNext={() =>
+                nextProgramSession && loadNextSession(nextProgramSession)
+              }
+              onClose={onClose}
+            />
           ) : (
             <>
               <PosePreview
@@ -614,6 +639,126 @@ export default function SessionRunner({
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function CompletionScreen({
+  earned,
+  totalSessions,
+  totalPoints,
+  nextSession,
+  onNext,
+  onClose,
+}: {
+  earned: Partial<Record<SkillId, number>>
+  totalSessions: number
+  totalPoints: number
+  nextSession: Session | null
+  onNext: () => void
+  onClose: () => void
+}) {
+  const skills = (Object.entries(earned) as [SkillId, number][])
+    .filter(([, p]) => p > 0)
+    .sort((a, b) => b[1] - a[1])
+  const earnedSum = skills.reduce((acc, [, p]) => acc + p, 0)
+
+  return (
+    <div className="flex w-full max-w-lg flex-col items-center gap-5 px-2">
+      <p className="text-6xl">✓</p>
+      <div className="text-center">
+        <h2 className="font-display text-[40px] italic leading-[1] sm:text-[48px]">
+          Good job.
+        </h2>
+        <p className="mt-2 text-[15px] text-white/85">
+          You showed up. That counts.
+        </p>
+      </div>
+
+      {skills.length > 0 && (
+        <div className="w-full rounded-2xl bg-white/10 p-4 backdrop-blur">
+          <div className="flex items-baseline justify-between">
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/80">
+              Skills earned
+            </p>
+            <p className="text-[11px] font-bold text-white/90">
+              +{earnedSum} points
+            </p>
+          </div>
+          <ul className="mt-3 flex flex-col gap-2">
+            {skills.map(([id, pts]) => {
+              const meta: SkillMeta = SKILLS[id]
+              return (
+                <li
+                  key={id}
+                  className="flex items-start gap-2.5 rounded-lg bg-white/95 px-3 py-2 text-left text-slate-900"
+                >
+                  <span className="text-xl">{meta.emoji}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold">
+                      {meta.name}{' '}
+                      <span className="text-[11px] font-bold text-emerald-700">
+                        +{pts}
+                      </span>
+                    </p>
+                    <p className="mt-0.5 text-[11px] leading-snug text-slate-600">
+                      {meta.meaning}
+                    </p>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+
+      <div className="flex w-full items-center justify-around rounded-xl bg-white/10 px-3 py-2.5 backdrop-blur">
+        <div className="text-center">
+          <p className="text-xl font-bold">{totalSessions}</p>
+          <p className="text-[10px] uppercase tracking-wider text-white/70">
+            Sessions total
+          </p>
+        </div>
+        <div className="h-8 w-px bg-white/20" />
+        <div className="text-center">
+          <p className="text-xl font-bold">{totalPoints}</p>
+          <p className="text-[10px] uppercase tracking-wider text-white/70">
+            Skill points
+          </p>
+        </div>
+      </div>
+
+      {nextSession ? (
+        <div className="flex w-full flex-col gap-2">
+          <button
+            onClick={onNext}
+            className="w-full rounded-xl bg-white px-5 py-4 text-left text-slate-900 transition hover:bg-white/90"
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+              Up next in your program
+            </p>
+            <p className="mt-1 text-[16px] font-bold">
+              {nextSession.icon} {nextSession.name} →
+            </p>
+            <p className="text-[12px] text-slate-600">
+              {nextSession.durationMin} min · {nextSession.focus}
+            </p>
+          </button>
+          <button
+            onClick={onClose}
+            className="w-full rounded-full bg-white/15 px-6 py-2.5 text-[13px] font-medium text-white/90 backdrop-blur transition hover:bg-white/25"
+          >
+            Done for now
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={onClose}
+          className="rounded-full bg-white px-8 py-3 font-semibold text-slate-900 transition hover:bg-white/90"
+        >
+          Done
+        </button>
+      )}
     </div>
   )
 }

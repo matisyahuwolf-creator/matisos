@@ -153,3 +153,51 @@ export function phaseStartWeek(track: Track, phaseId: string): number {
   }
   return 1
 }
+
+export type ActiveTrackState = {
+  trackId: string
+  startedAt: number
+  currentWeek: number
+}
+
+export const ACTIVE_TRACK_KEY = 'yoga:track-v1'
+
+import { storage } from '../../lib/storage'
+import { sessions, type Session } from './sessions'
+import { countSessionsInWindow } from './history'
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000
+
+export function loadActiveTrack(): ActiveTrackState | null {
+  const raw = storage.get(ACTIVE_TRACK_KEY)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as ActiveTrackState
+  } catch {
+    return null
+  }
+}
+
+export function getNextSessionInProgram(
+  justCompletedSessionId: string,
+): Session | null {
+  const active = loadActiveTrack()
+  if (!active) return null
+  const track = tracks.find((t) => t.id === active.trackId)
+  if (!track) return null
+  const phase = phaseFor(track, active.currentWeek)
+  const incomplete = phase.weeklyMix
+    .map((mix) => ({
+      mix,
+      done: countSessionsInWindow(mix.sessionId, WEEK_MS),
+    }))
+    .filter(({ mix, done }) => done < mix.perWeek)
+
+  if (incomplete.length === 0) return null
+
+  // Prefer something different from what just finished
+  const candidate =
+    incomplete.find((i) => i.mix.sessionId !== justCompletedSessionId) ??
+    incomplete[0]
+  return sessions.find((s) => s.id === candidate.mix.sessionId) ?? null
+}
