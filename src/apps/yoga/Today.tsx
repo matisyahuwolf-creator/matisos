@@ -63,6 +63,7 @@ type TodayProps = {
 
 export default function Today({ stats, onSwitchTab }: TodayProps) {
   const [running, setRunning] = useState<Session | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const active = useMemo(loadActive, [])
   const track = useMemo(
@@ -74,19 +75,39 @@ export default function Today({ stats, onSwitchTab }: TodayProps) {
     [track, active],
   )
 
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000
+  const weeklyProgress = useMemo(() => {
+    if (!phase) return null
+    const history = loadHistory()
+    const weekAgo = Date.now() - WEEK_MS
+    return phase.weeklyMix.map((mix) => {
+      const done = history.filter(
+        (h) => h.sessionId === mix.sessionId && h.completedAt >= weekAgo,
+      ).length
+      const session = sessions.find((s) => s.id === mix.sessionId)
+      return { mix, session, done }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, refreshKey])
+
   const pick = useMemo<Session>(() => {
-    if (phase) {
-      const firstId = phase.weeklyMix[0]?.sessionId
-      if (firstId) {
-        const found = sessions.find((s) => s.id === firstId)
-        if (found) return found
-      }
+    if (weeklyProgress) {
+      const nextPending = weeklyProgress.find(
+        (w) => w.session && w.done < w.mix.perWeek,
+      )
+      if (nextPending?.session) return nextPending.session
     }
     return pickByTimeOfDay()
-  }, [phase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weeklyProgress])
+
+  const allDone =
+    weeklyProgress?.every((w) => w.done >= w.mix.perWeek) ?? false
 
   const reason = phase
-    ? `From your program · ${phase.name}`
+    ? allDone
+      ? 'You finished this week. Bonus if you want it.'
+      : `From your program · ${phase.name}`
     : 'Matched to your time of day'
 
   return (
@@ -161,6 +182,13 @@ export default function Today({ stats, onSwitchTab }: TodayProps) {
         </div>
       </button>
 
+      {weeklyProgress && weeklyProgress.length > 0 && (
+        <WeeklySchedule
+          rows={weeklyProgress}
+          onPickSession={(s) => setRunning(s)}
+        />
+      )}
+
       <PracticeDashboard />
 
       <div className="flex items-stretch rounded-xl bg-white px-2 py-3 ring-1 ring-black/5">
@@ -183,9 +211,127 @@ export default function Today({ stats, onSwitchTab }: TodayProps) {
       {running && (
         <SessionRunner
           session={running}
-          onClose={() => setRunning(null)}
+          onClose={() => {
+            setRunning(null)
+            setRefreshKey((k) => k + 1)
+          }}
         />
       )}
+    </div>
+  )
+}
+
+function WeeklySchedule({
+  rows,
+  onPickSession,
+}: {
+  rows: Array<{
+    mix: { sessionId: string; perWeek: number }
+    session: Session | undefined
+    done: number
+  }>
+  onPickSession: (s: Session) => void
+}) {
+  const totalNeeded = rows.reduce((acc, r) => acc + r.mix.perWeek, 0)
+  const totalDone = rows.reduce(
+    (acc, r) => acc + Math.min(r.done, r.mix.perWeek),
+    0,
+  )
+  const nextPendingIndex = rows.findIndex(
+    (r) => r.done < r.mix.perWeek && r.session,
+  )
+  return (
+    <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/5">
+      <div className="flex items-baseline justify-between border-b border-slate-100 px-4 py-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+            This week's schedule
+          </p>
+          <h3 className="mt-0.5 font-display text-[20px] italic text-slate-900">
+            {totalDone} of {totalNeeded} done
+          </h3>
+        </div>
+        <div className="text-right">
+          <p className="text-[20px] font-bold text-slate-900">
+            {totalNeeded - totalDone}
+          </p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            to go
+          </p>
+        </div>
+      </div>
+      <ul className="divide-y divide-slate-100">
+        {rows.map((row, i) => {
+          if (!row.session) return null
+          const isDone = row.done >= row.mix.perWeek
+          const isNext = i === nextPendingIndex
+          const remaining = Math.max(0, row.mix.perWeek - row.done)
+          return (
+            <li key={row.mix.sessionId}>
+              <button
+                onClick={() => row.session && onPickSession(row.session)}
+                disabled={!row.session}
+                className={`flex w-full items-center gap-3 px-4 py-3 text-left press ${
+                  isNext
+                    ? 'bg-amber-50/60 hover:bg-amber-50'
+                    : isDone
+                      ? 'bg-emerald-50/40 hover:bg-emerald-50/60'
+                      : 'hover:bg-slate-50'
+                }`}
+              >
+                <div
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${row.session.gradient} text-lg`}
+                >
+                  <span>{row.session.icon}</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p
+                      className={`truncate text-[14px] font-semibold ${
+                        isDone ? 'text-slate-600' : 'text-slate-900'
+                      }`}
+                    >
+                      {row.session.name}
+                    </p>
+                    {isNext && (
+                      <span className="shrink-0 rounded-full bg-amber-200 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-900">
+                        Next
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    {row.session.durationMin} min ·{' '}
+                    {isDone
+                      ? `done ${row.done}×`
+                      : `${row.done}/${row.mix.perWeek} this week`}
+                  </p>
+                </div>
+                {isDone ? (
+                  <span
+                    className="shrink-0 text-emerald-600"
+                    aria-label="completed"
+                  >
+                    <svg width="22" height="22" viewBox="0 0 22 22">
+                      <path
+                        d="M5 11l4 4 8-8"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                ) : (
+                  <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    {remaining}× left
+                  </span>
+                )}
+              </button>
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }

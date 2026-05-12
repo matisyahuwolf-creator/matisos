@@ -497,6 +497,7 @@ function PoseRow({
             {subtitle && (
               <p className="truncate text-[12px] text-slate-500">{subtitle}</p>
             )}
+            <SkillEmojiRow poseId={pose.id} />
           </button>
 
           {pose.status === 'library' && (
@@ -600,6 +601,31 @@ function PoseSkillChips({ poseId }: { poseId: string }) {
             <span>{meta.emoji}</span>
             <span>{meta.name}</span>
             <span className="opacity-70">+{pts}</span>
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+function SkillEmojiRow({ poseId }: { poseId: string }) {
+  const skills = (Object.entries(skillsForPose(poseId)) as [SkillId, number][])
+    .filter(([, p]) => p > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+  if (skills.length === 0) return null
+  return (
+    <div className="mt-1 flex items-center gap-1">
+      {skills.map(([id, pts]) => {
+        const meta = SKILLS[id]
+        return (
+          <span
+            key={id}
+            title={`${meta.name} +${pts}`}
+            className={`inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] ${meta.bg}`}
+          >
+            <span className="text-[11px] leading-none">{meta.emoji}</span>
+            <span className={`font-semibold ${meta.text}`}>+{pts}</span>
           </span>
         )
       })}
