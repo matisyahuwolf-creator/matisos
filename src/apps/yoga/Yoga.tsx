@@ -8,6 +8,7 @@ import TracksView from './TracksView'
 import Today, { type TabKey } from './Today'
 import Coach from './Coach'
 import SkillsView from './SkillsView'
+import FloatingChat from './FloatingChat'
 import { catalog, type Difficulty } from './catalog'
 
 type Status = 'library' | 'learning' | 'mastered'
@@ -323,6 +324,8 @@ export default function Yoga() {
       )}
         </div>
       )}
+
+      <FloatingChat />
     </div>
   )
 }

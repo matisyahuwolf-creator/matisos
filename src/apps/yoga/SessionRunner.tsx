@@ -14,6 +14,7 @@ import {
   skillsForPose,
   totalSkillPoints,
 } from './skills'
+import StepInstructions from './StepInstructions'
 
 const AUDIO_KEY = 'yoga:audio-enabled'
 const MUSIC_KEY = 'yoga:music-enabled'
@@ -583,6 +584,7 @@ export default function SessionRunner({
                 </p>
               )}
               <CurrentPoseSkills poseId={current.poseId} />
+              <StepInstructions poseId={current.poseId} />
               <div className="mt-5 text-6xl font-bold tabular-nums sm:text-7xl">
                 {format(remaining)}
               </div>
