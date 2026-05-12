@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import Hyrogliphics from './apps/hyrogliphics/Hyrogliphics'
 import Initiation from './apps/initiation/Initiation'
 import Pardes from './apps/pardes/Pardes'
+import Practice from './apps/practice/Practice'
 import Scratch from './apps/scratch/Scratch'
 import Susquehanna from './apps/susquehanna/Susquehanna'
 import Yoga from './apps/yoga/Yoga'
@@ -46,6 +47,19 @@ export const apps: AppEntry[] = [
     gradient: 'from-emerald-400 via-teal-500 to-cyan-600',
     category: 'Wellness',
     component: Yoga,
+  },
+  {
+    kind: 'internal',
+    slug: 'practice',
+    name: 'Practice',
+    tagline: 'Your personal initiation.',
+    description:
+      'A daily structure for body, food, sleep, learning, relationships, finances, work, and creativity. Built out one layer at a time.',
+    icon: '◐',
+    status: 'live',
+    gradient: 'from-amber-400 via-rose-500 to-violet-600',
+    category: 'Wellness',
+    component: Practice,
   },
   {
     kind: 'internal',

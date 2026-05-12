@@ -42,6 +42,10 @@ const TRACKS: Track[] = [
 
 export default function Landing({ onClose }: { onClose: () => void }) {
   const [scrolled, setScrolled] = useState(false)
+  const [schoolOpen, setSchoolOpen] = useState<{
+    chapter: number
+    lesson: number
+  } | null>(null)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -51,6 +55,9 @@ export default function Landing({ onClose }: { onClose: () => void }) {
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
   }, [])
+
+  const openSchool = (chapter = 0, lesson = 0) =>
+    setSchoolOpen({ chapter, lesson })
 
   return (
     <div
@@ -193,13 +200,13 @@ export default function Landing({ onClose }: { onClose: () => void }) {
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <a
-              href="#tracks"
+            <button
+              onClick={() => openSchool(0, 0)}
               className="group relative inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-[#e8c878] to-[#c9a14a] px-7 py-3.5 text-[14px] font-semibold tracking-wide text-[#1a1208] shadow-[0_0_0_1px_rgba(243,222,170,0.4),0_8px_30px_-8px_rgba(201,161,74,0.6)] transition hover:from-[#f3deaa] hover:to-[#d4b25a]"
             >
-              Begin
+              Begin the first lesson
               <span className="transition group-hover:translate-x-0.5">→</span>
-            </a>
+            </button>
             <a
               href="#curriculum"
               className="inline-flex items-center gap-2 rounded-full border border-[#c9a14a]/30 px-7 py-3.5 text-[14px] font-semibold tracking-wide text-[#e8dcc4]/90 transition hover:border-[#c9a14a]/60 hover:text-[#f3deaa]"
@@ -253,9 +260,10 @@ export default function Landing({ onClose }: { onClose: () => void }) {
 
         <div className="mt-12 grid gap-5 sm:grid-cols-3">
           {TRACKS.map((t) => (
-            <article
+            <button
               key={t.name}
-              className="group relative overflow-hidden rounded-2xl border border-[#c9a14a]/15 bg-gradient-to-b from-[#1a1612] to-[#120e0a] p-6 transition hover:border-[#c9a14a]/45"
+              onClick={() => openSchool(t.startChapter, 0)}
+              className="group relative overflow-hidden rounded-2xl border border-[#c9a14a]/15 bg-gradient-to-b from-[#1a1612] to-[#120e0a] p-6 text-left transition hover:border-[#c9a14a]/45 hover:from-[#1f1a14] focus-visible:border-[#c9a14a]/70"
             >
               <div className="absolute -top-8 -right-6 text-[120px] leading-none text-[#c9a14a]/[0.06] select-none transition group-hover:text-[#c9a14a]/[0.12]">
                 {t.glyph}
@@ -274,8 +282,12 @@ export default function Landing({ onClose }: { onClose: () => void }) {
                 <p className="mt-6 border-t border-[#c9a14a]/15 pt-4 text-[12px] italic text-[#e8dcc4]/60">
                   {t.audience}
                 </p>
+                <p className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-semibold tracking-wide text-[#f3deaa] opacity-70 transition group-hover:opacity-100">
+                  Begin this path
+                  <span className="transition group-hover:translate-x-0.5">→</span>
+                </p>
               </div>
-            </article>
+            </button>
           ))}
         </div>
       </section>
@@ -291,26 +303,31 @@ export default function Landing({ onClose }: { onClose: () => void }) {
         </h2>
 
         <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-[#c9a14a]/15 bg-[#c9a14a]/15 sm:grid-cols-2 md:grid-cols-3">
-          {CHAPTERS.map((c, i) => (
-            <div
-              key={c.title}
-              className="group flex items-start gap-4 bg-[#120e0a] p-6 transition hover:bg-[#1a1612]"
+          {chapters.map((c, i) => (
+            <button
+              key={c.id}
+              onClick={() => openSchool(i, 0)}
+              className="group flex items-start gap-4 bg-[#120e0a] p-6 text-left transition hover:bg-[#1a1612] focus-visible:bg-[#1a1612]"
             >
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#c9a14a]/25 bg-[#0d0b08] text-[24px] hg-gold transition group-hover:border-[#c9a14a]/60">
                 {c.glyph}
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-[11px] uppercase tracking-[0.25em] text-[#c9a14a]/70">
-                  {String(i + 1).padStart(2, '0')}
+                  {String(i + 1).padStart(2, '0')} · {c.lessons.length} lessons
                 </p>
                 <h3 className="mt-1 font-display text-[22px] font-semibold leading-tight text-[#f3deaa]">
                   {c.title}
                 </h3>
                 <p className="mt-1 text-[13px] leading-relaxed text-[#c9bf9d]">
-                  {c.note}
+                  {c.subtitle}
+                </p>
+                <p className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#f3deaa]/70 transition group-hover:text-[#f3deaa]">
+                  Enter
+                  <span className="transition group-hover:translate-x-0.5">→</span>
                 </p>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </section>
@@ -405,6 +422,21 @@ export default function Landing({ onClose }: { onClose: () => void }) {
         </div>
       </section>
 
+      {/* Secondary CTA — straight to school */}
+      <section className="mx-auto max-w-3xl px-5 pb-4 -mt-4">
+        <div className="rounded-2xl border border-[#c9a14a]/15 bg-[#0d0b08]/40 p-5 text-center">
+          <p className="text-[13px] text-[#c9bf9d]">
+            Or skip the tour.{' '}
+            <button
+              onClick={() => openSchool(0, 0)}
+              className="font-semibold text-[#f3deaa] underline-offset-4 transition hover:underline"
+            >
+              Start the first lesson →
+            </button>
+          </p>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-[#c9a14a]/15">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-5 py-10 sm:flex-row sm:justify-between">
@@ -430,6 +462,14 @@ export default function Landing({ onClose }: { onClose: () => void }) {
           </div>
         </div>
       </footer>
+
+      {schoolOpen && (
+        <School
+          initialChapter={schoolOpen.chapter}
+          initialLesson={schoolOpen.lesson}
+          onClose={() => setSchoolOpen(null)}
+        />
+      )}
     </div>
   )
 }
