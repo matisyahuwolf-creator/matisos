@@ -11,6 +11,16 @@ export type SessionFocus =
   | 'Tech Neck Reset'
   | 'Morning Activation'
   | 'Post-Workout Recovery'
+  | 'Hamstring Deep Stretch'
+  | 'Shoulder Mobility'
+  | 'Core Strength'
+  | 'Quick Reset'
+  | 'Deep Flexibility'
+  | 'Spinal Twists'
+  | 'Inversion Prep'
+  | 'Balance Flow'
+  | 'Breath Foundation'
+  | 'Full-Body Reset'
 
 export type SessionStep = {
   poseId: string
@@ -255,6 +265,226 @@ export const sessions: Session[] = [
       { poseId: 'reclining-bound-angle', durationSec: 180 },
       { poseId: 'supine-twist', durationSec: 60, perSide: true },
       { poseId: 'corpse', durationSec: 180, cue: 'Return to ground.' },
+    ],
+  },
+  {
+    id: 'hamstring-deep',
+    name: 'Hamstring Deep Stretch',
+    focus: 'Hamstring Deep Stretch',
+    difficulty: 'Intermediate',
+    durationMin: 20,
+    icon: '🦵',
+    gradient: 'from-amber-500 via-orange-500 to-red-600',
+    description:
+      'Targeted lengthening of the posterior leg. Useful before splits work, after a run, or for chronic lower-back tension that comes from short hamstrings.',
+    steps: [
+      { poseId: 'child', durationSec: 90 },
+      { poseId: 'downward-dog', durationSec: 60 },
+      { poseId: 'standing-forward-fold', durationSec: 60 },
+      { poseId: 'half-splits', durationSec: 90, perSide: true },
+      { poseId: 'pyramid', durationSec: 60, perSide: true },
+      { poseId: 'seated-forward-fold', durationSec: 120 },
+      { poseId: 'head-to-knee', durationSec: 60, perSide: true },
+      { poseId: 'reclined-big-toe', durationSec: 60, perSide: true },
+      { poseId: 'corpse', durationSec: 90 },
+    ],
+  },
+  {
+    id: 'shoulder-mobility',
+    name: 'Shoulder Mobility',
+    focus: 'Shoulder Mobility',
+    difficulty: 'Beginner',
+    durationMin: 15,
+    icon: '🪽',
+    gradient: 'from-sky-400 via-blue-500 to-indigo-600',
+    description:
+      'Opens the shoulder girdle and counteracts the forward-rounded posture from screens. Light, no shoulder-loading.',
+    steps: [
+      { poseId: 'easy', durationSec: 60, cue: 'Slow neck rolls and shoulder rolls.' },
+      { poseId: 'thread-needle', durationSec: 60, perSide: true },
+      { poseId: 'cow', durationSec: 45 },
+      { poseId: 'cat', durationSec: 45 },
+      { poseId: 'sphinx', durationSec: 60 },
+      { poseId: 'downward-dog', durationSec: 60 },
+      { poseId: 'child', durationSec: 90, cue: 'Arms forward; melt the shoulders.' },
+      { poseId: 'corpse', durationSec: 60 },
+    ],
+  },
+  {
+    id: 'core-strength',
+    name: 'Core Foundation',
+    focus: 'Core Strength',
+    difficulty: 'Intermediate',
+    durationMin: 15,
+    icon: '🔥',
+    gradient: 'from-orange-500 via-amber-600 to-yellow-600',
+    description:
+      'Builds the deep abdominal and back-supporting muscles. Strength-focused. Take breaks freely.',
+    steps: [
+      { poseId: 'easy', durationSec: 45, cue: 'Settle. A few long breaths.' },
+      { poseId: 'cat', durationSec: 30 },
+      { poseId: 'cow', durationSec: 30 },
+      { poseId: 'bird-dog', durationSec: 30, perSide: true },
+      { poseId: 'plank', durationSec: 45 },
+      { poseId: 'boat', durationSec: 45 },
+      { poseId: 'side-plank', durationSec: 30, perSide: true },
+      { poseId: 'bridge', durationSec: 60 },
+      { poseId: 'locust', durationSec: 45 },
+      { poseId: 'child', durationSec: 60 },
+      { poseId: 'corpse', durationSec: 60 },
+    ],
+  },
+  {
+    id: 'quick-energy',
+    name: 'Quick Energy Reset',
+    focus: 'Quick Reset',
+    difficulty: 'Beginner',
+    durationMin: 5,
+    icon: '⚡',
+    gradient: 'from-yellow-400 via-orange-500 to-pink-500',
+    description:
+      'Five minutes. Get moving when you need a body shift but don\'t have time for a full practice.',
+    steps: [
+      { poseId: 'mountain', durationSec: 30, cue: 'Two long breaths to arrive.' },
+      { poseId: 'upward-salute', durationSec: 30 },
+      { poseId: 'standing-forward-fold', durationSec: 30 },
+      { poseId: 'high-lunge', durationSec: 30, perSide: true },
+      { poseId: 'downward-dog', durationSec: 45 },
+      { poseId: 'cobra', durationSec: 30 },
+      { poseId: 'mountain', durationSec: 30, cue: 'Feel the body awake.' },
+    ],
+  },
+  {
+    id: 'deep-stretch',
+    name: 'Deep Flexibility',
+    focus: 'Deep Flexibility',
+    difficulty: 'Intermediate',
+    durationMin: 35,
+    icon: '🌊',
+    gradient: 'from-rose-500 via-fuchsia-600 to-purple-700',
+    description:
+      'A long, slow session for end-range work. Long holds; let gravity do most of the work.',
+    steps: [
+      { poseId: 'easy', durationSec: 90 },
+      { poseId: 'cat', durationSec: 45 },
+      { poseId: 'cow', durationSec: 45 },
+      { poseId: 'downward-dog', durationSec: 60 },
+      { poseId: 'low-lunge', durationSec: 90, perSide: true },
+      { poseId: 'pigeon', durationSec: 180, perSide: true, cue: 'Stay slow into it. Out at any point.' },
+      { poseId: 'bound-angle', durationSec: 120 },
+      { poseId: 'wide-angle-fold', durationSec: 90 },
+      { poseId: 'seated-forward-fold', durationSec: 120 },
+      { poseId: 'bridge', durationSec: 90 },
+      { poseId: 'supine-twist', durationSec: 90, perSide: true },
+      { poseId: 'reclining-bound-angle', durationSec: 180 },
+      { poseId: 'corpse', durationSec: 180 },
+    ],
+  },
+  {
+    id: 'twist-detox',
+    name: 'Spinal Twists',
+    focus: 'Spinal Twists',
+    difficulty: 'Intermediate',
+    durationMin: 12,
+    icon: '🌀',
+    gradient: 'from-emerald-500 via-teal-600 to-cyan-700',
+    description:
+      'Rotational mobility through the thoracic spine. Good after long sitting or in the afternoon slump.',
+    steps: [
+      { poseId: 'easy', durationSec: 60 },
+      { poseId: 'cow', durationSec: 30 },
+      { poseId: 'cat', durationSec: 30 },
+      { poseId: 'half-lord-of-fishes', durationSec: 60, perSide: true },
+      { poseId: 'revolved-triangle', durationSec: 45, perSide: true },
+      { poseId: 'supine-twist', durationSec: 90, perSide: true },
+      { poseId: 'thread-needle', durationSec: 60, perSide: true },
+      { poseId: 'corpse', durationSec: 90 },
+    ],
+  },
+  {
+    id: 'inversion-prep',
+    name: 'Inversion Prep',
+    focus: 'Inversion Prep',
+    difficulty: 'Intermediate',
+    durationMin: 20,
+    icon: '🪂',
+    gradient: 'from-indigo-600 via-violet-700 to-purple-800',
+    description:
+      'Builds the shoulder strength and core stability that inversions require, without yet committing to going upside-down.',
+    steps: [
+      { poseId: 'child', durationSec: 60 },
+      { poseId: 'downward-dog', durationSec: 90 },
+      { poseId: 'dolphin', durationSec: 60 },
+      { poseId: 'plank', durationSec: 45 },
+      { poseId: 'side-plank', durationSec: 30, perSide: true },
+      { poseId: 'bridge', durationSec: 90 },
+      { poseId: 'legs-up-wall', durationSec: 180, cue: 'A safe inversion to get the body used to upside-down.' },
+      { poseId: 'corpse', durationSec: 90 },
+    ],
+  },
+  {
+    id: 'balance-flow',
+    name: 'Balance Flow',
+    focus: 'Balance Flow',
+    difficulty: 'Intermediate',
+    durationMin: 18,
+    icon: '⚖️',
+    gradient: 'from-lime-500 via-emerald-600 to-teal-700',
+    description:
+      'Single-leg work to develop stabilizers and vestibular awareness. Use a wall for support — no shame in the brace.',
+    steps: [
+      { poseId: 'mountain', durationSec: 45, cue: 'Find ground through both feet.' },
+      { poseId: 'tree', durationSec: 45, perSide: true },
+      { poseId: 'warrior-1', durationSec: 45, perSide: true },
+      { poseId: 'warrior-3', durationSec: 45, perSide: true },
+      { poseId: 'half-moon', durationSec: 45, perSide: true },
+      { poseId: 'eagle', durationSec: 45, perSide: true },
+      { poseId: 'mountain', durationSec: 60, cue: 'Notice the difference.' },
+      { poseId: 'corpse', durationSec: 90 },
+    ],
+  },
+  {
+    id: 'breath-foundation',
+    name: 'Breath Foundation',
+    focus: 'Breath Foundation',
+    difficulty: 'Beginner',
+    durationMin: 12,
+    icon: '💨',
+    gradient: 'from-cyan-400 via-sky-500 to-blue-700',
+    description:
+      'Breath-centered practice. Few poses; the focus is the exhale lengthening over time. Strong vagal-tone session.',
+    steps: [
+      { poseId: 'easy', durationSec: 180, cue: 'Lengthen the exhale beyond the inhale.' },
+      { poseId: 'cow', durationSec: 30 },
+      { poseId: 'cat', durationSec: 30 },
+      { poseId: 'sphinx', durationSec: 60, cue: 'Long, slow breaths.' },
+      { poseId: 'bridge', durationSec: 60 },
+      { poseId: 'reclining-bound-angle', durationSec: 180, cue: 'Breath only. The body does nothing.' },
+      { poseId: 'corpse', durationSec: 120 },
+    ],
+  },
+  {
+    id: 'stiff-body',
+    name: 'Stiff Body Recovery',
+    focus: 'Full-Body Reset',
+    difficulty: 'Beginner',
+    durationMin: 25,
+    icon: '🦴',
+    gradient: 'from-stone-500 via-amber-700 to-orange-800',
+    description:
+      'For mornings when everything is stiff. Gentle, full-body, no demand. Move through every major joint.',
+    steps: [
+      { poseId: 'child', durationSec: 90 },
+      { poseId: 'cow', durationSec: 45 },
+      { poseId: 'cat', durationSec: 45 },
+      { poseId: 'downward-dog', durationSec: 60 },
+      { poseId: 'low-lunge', durationSec: 90, perSide: true },
+      { poseId: 'cobra', durationSec: 60 },
+      { poseId: 'bridge', durationSec: 60 },
+      { poseId: 'thread-needle', durationSec: 60, perSide: true },
+      { poseId: 'supine-twist', durationSec: 90, perSide: true },
+      { poseId: 'happy-baby', durationSec: 60 },
+      { poseId: 'corpse', durationSec: 120 },
     ],
   },
 ]

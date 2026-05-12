@@ -11,6 +11,7 @@ import {
   type SkillMeta,
   addSkillPoints,
   calculateSessionSkills,
+  skillsForPose,
   totalSkillPoints,
 } from './skills'
 
@@ -451,7 +452,9 @@ export default function SessionRunner({
 
   function goNext() {
     if (isLastStep) {
-      onClose()
+      // On the last step, "next" means finish — trigger completion flow
+      // so skills are awarded and the session is recorded
+      setRemaining(0)
       return
     }
     const next = index + 1
@@ -579,6 +582,7 @@ export default function SessionRunner({
                   {current.rationale}
                 </p>
               )}
+              <CurrentPoseSkills poseId={current.poseId} />
               <div className="mt-5 text-6xl font-bold tabular-nums sm:text-7xl">
                 {format(remaining)}
               </div>
@@ -759,6 +763,34 @@ function CompletionScreen({
           Done
         </button>
       )}
+    </div>
+  )
+}
+
+function CurrentPoseSkills({ poseId }: { poseId: string }) {
+  const skills = (Object.entries(skillsForPose(poseId)) as [SkillId, number][])
+    .filter(([, p]) => p > 0)
+    .sort((a, b) => b[1] - a[1])
+  if (skills.length === 0) return null
+  return (
+    <div className="mt-3 flex max-w-md flex-wrap items-center justify-center gap-1.5">
+      <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/60">
+        Earning
+      </span>
+      {skills.map(([id, pts]) => {
+        const meta = SKILLS[id]
+        return (
+          <span
+            key={id}
+            className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur"
+            title={meta.name}
+          >
+            <span>{meta.emoji}</span>
+            <span className="text-white/90">{meta.name}</span>
+            <span className="text-white/70">+{pts}</span>
+          </span>
+        )
+      })}
     </div>
   )
 }

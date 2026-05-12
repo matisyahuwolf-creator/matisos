@@ -4,7 +4,7 @@ import { sessions, type Session } from './sessions'
 import { phaseFor, phaseStartWeek, tracks } from './tracks'
 import SessionRunner from './SessionRunner'
 import { historyStats, loadHistory } from './history'
-import { loadSkillPoints, type SkillId } from './skills'
+import { SKILLS, loadSkillPoints, skillsForPose, type SkillId } from './skills'
 
 type ActiveTrackState = {
   trackId: string
@@ -183,10 +183,13 @@ export default function Today({ stats, onSwitchTab }: TodayProps) {
       </button>
 
       {weeklyProgress && weeklyProgress.length > 0 && (
-        <WeeklySchedule
-          rows={weeklyProgress}
-          onPickSession={(s) => setRunning(s)}
-        />
+        <>
+          <WeeklySchedule
+            rows={weeklyProgress}
+            onPickSession={(s) => setRunning(s)}
+          />
+          <ThisWeekSkills rows={weeklyProgress} />
+        </>
       )}
 
       <PracticeDashboard />
@@ -401,6 +404,82 @@ function DashStat({ value, label }: { value: number | string; label: string }) {
       <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
         {label}
       </p>
+    </div>
+  )
+}
+
+function ThisWeekSkills({
+  rows,
+}: {
+  rows: Array<{
+    mix: { sessionId: string; perWeek: number }
+    session: Session | undefined
+    done: number
+  }>
+}) {
+  const projection: Partial<Record<SkillId, number>> = {}
+  for (const row of rows) {
+    if (!row.session) continue
+    for (const step of row.session.steps) {
+      const ps = skillsForPose(step.poseId)
+      for (const [id, pts] of Object.entries(ps)) {
+        projection[id as SkillId] =
+          (projection[id as SkillId] ?? 0) + (pts ?? 0) * row.mix.perWeek
+      }
+    }
+  }
+  const top = (Object.entries(projection) as [SkillId, number][])
+    .filter(([, p]) => p > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+  if (top.length === 0) return null
+  const max = top[0][1]
+  return (
+    <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/5">
+      <div className="border-b border-slate-100 px-4 py-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+          This week you're building
+        </p>
+        <h3 className="mt-0.5 font-display text-[20px] italic text-slate-900">
+          {top.length} skills through these poses
+        </h3>
+        <p className="mt-1 text-[12px] leading-snug text-slate-500">
+          What you'll gain physically if you complete all the planned sessions this week.
+        </p>
+      </div>
+      <ul className="divide-y divide-slate-100">
+        {top.map(([id, pts]) => {
+          const meta = SKILLS[id]
+          const pct = Math.min(100, (pts / max) * 100)
+          return (
+            <li key={id} className="flex items-center gap-3 px-4 py-2.5">
+              <span
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-lg ${meta.bg}`}
+              >
+                {meta.emoji}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="truncate text-[14px] font-semibold text-slate-900">
+                    {meta.name}
+                  </p>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${meta.bg} ${meta.text}`}
+                  >
+                    +{pts} pts
+                  </span>
+                </div>
+                <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className={`h-full rounded-full ${meta.bg.replace('100', '400')}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }
