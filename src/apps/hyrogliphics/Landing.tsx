@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const GLYPHS = ['𓂀', '𓋹', '𓊽', '𓏏', '𓆣', '𓇳', '𓁹', '𓃭']
 
@@ -45,15 +45,21 @@ const CHAPTERS = [
 
 export default function Landing({ onClose }: { onClose: () => void }) {
   const [scrolled, setScrolled] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    const el = ref.current
+    if (!el) return
+    const onScroll = () => setScrolled(el.scrollTop > 12)
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
   }, [])
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#0d0b08] text-[#e8dcc4]">
+    <div
+      ref={ref}
+      className="fixed inset-0 z-50 overflow-y-auto bg-[#0d0b08] text-[#e8dcc4]"
+    >
       <style>{`
         @keyframes glyphDrift {
           0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.55; }

@@ -1,6 +1,8 @@
 import type { ComponentType } from 'react'
+import Hyrogliphics from './apps/hyrogliphics/Hyrogliphics'
 import Pardes from './apps/pardes/Pardes'
 import Scratch from './apps/scratch/Scratch'
+import Susquehanna from './apps/susquehanna/Susquehanna'
 import Yoga from './apps/yoga/Yoga'
 
 type BaseEntry = {
@@ -46,6 +48,19 @@ export const apps: AppEntry[] = [
   },
   {
     kind: 'internal',
+    slug: 'hyrogliphics',
+    name: 'Hyrogliphics',
+    tagline: 'Decode the language of intelligence.',
+    description:
+      'A landing page for an AI school. Ancient-meets-future — three paths (Initiate, Practitioner, Adept) taught from the same alphabet.',
+    icon: '𓋹',
+    status: 'live',
+    gradient: 'from-amber-700 via-yellow-800 to-stone-900',
+    category: 'Tools',
+    component: Hyrogliphics,
+  },
+  {
+    kind: 'internal',
     slug: 'scratch',
     name: 'Scratch',
     tagline: 'Notepad',
@@ -56,6 +71,19 @@ export const apps: AppEntry[] = [
     gradient: 'from-amber-400 to-orange-500',
     category: 'Tools',
     component: Scratch,
+  },
+  {
+    kind: 'internal',
+    slug: 'susquehanna',
+    name: 'Susquehanna',
+    tagline: 'AI for NEPA small business.',
+    description:
+      'A landing page for an AI integrations company in Northeastern PA — starting with restaurants. Modern websites + customer-service chatbots, then expanding to dental, auto, and salons.',
+    icon: '🌊',
+    status: 'live',
+    gradient: 'from-cyan-700 via-emerald-700 to-stone-700',
+    category: 'Tools',
+    component: Susquehanna,
   },
   {
     kind: 'external',
