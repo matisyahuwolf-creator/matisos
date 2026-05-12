@@ -456,7 +456,10 @@ function GeneratedCard({
   const [arcOpen, setArcOpen] = useState(false)
   return (
     <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/5">
-      <div className="bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-700 p-5 text-white">
+      <button
+        onClick={onRun}
+        className="psychedelic-shimmer w-full bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-700 p-5 text-left text-white press hover:brightness-105 active:scale-[0.995]"
+      >
         <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/85">
           Custom · {session.steps.length} poses · ~{minutes} min
         </p>
@@ -464,13 +467,13 @@ function GeneratedCard({
         <p className="mt-2 text-[13px] leading-relaxed text-white/90">
           {session.description}
         </p>
-        <button
-          onClick={onRun}
-          className="mt-4 w-full rounded-xl bg-white px-4 py-3 text-[15px] font-bold text-slate-900 shadow press hover:bg-white/90"
-        >
-          ▶ Start session
-        </button>
-      </div>
+        <div className="mt-4 flex items-center justify-between rounded-xl bg-white/15 px-4 py-3 backdrop-blur">
+          <span className="text-[13px] font-bold uppercase tracking-[0.12em]">
+            Tap to begin
+          </span>
+          <span className="text-lg">▶</span>
+        </div>
+      </button>
 
       {session.arc && (
         <div className="border-b border-slate-100 px-5 py-3">

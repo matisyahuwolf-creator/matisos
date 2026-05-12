@@ -124,8 +124,9 @@ export default function Today({ stats, onSwitchTab }: TodayProps) {
         </button>
       )}
 
-      <div
-        className={`overflow-hidden rounded-[22px] bg-gradient-to-br ${pick.gradient} p-6 text-white shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)]`}
+      <button
+        onClick={() => setRunning(pick)}
+        className={`psychedelic-shimmer w-full overflow-hidden rounded-[22px] bg-gradient-to-br ${pick.gradient} p-6 text-left text-white shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)] press hover:brightness-105 active:scale-[0.99]`}
       >
         <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/80">
           {reason}
@@ -144,13 +145,13 @@ export default function Today({ stats, onSwitchTab }: TodayProps) {
         <p className="mt-3 text-[13px] leading-relaxed text-white/85">
           {pick.description}
         </p>
-        <button
-          onClick={() => setRunning(pick)}
-          className="mt-4 w-full rounded-xl bg-white px-4 py-3 text-[15px] font-bold text-slate-900 shadow transition hover:bg-white/90"
-        >
-          ▶ Start session
-        </button>
-      </div>
+        <div className="mt-4 flex items-center justify-between rounded-xl bg-white/15 px-4 py-3 backdrop-blur">
+          <span className="text-[13px] font-bold uppercase tracking-[0.12em]">
+            Tap to begin
+          </span>
+          <span className="text-lg">▶</span>
+        </div>
+      </button>
 
       <div className="flex items-stretch rounded-xl bg-white px-2 py-3 ring-1 ring-black/5">
         <StatBlock value={stats.working} label="Working on" />
