@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import School from './School'
+import { chapters } from './lessons'
 
 const GLYPHS = ['𓂀', '𓋹', '𓊽', '𓏏', '𓆣', '𓇳', '𓁹', '𓃭']
 
@@ -8,6 +10,7 @@ type Track = {
   subtitle: string
   arc: string
   audience: string
+  startChapter: number
 }
 
 const TRACKS: Track[] = [
@@ -17,6 +20,7 @@ const TRACKS: Track[] = [
     subtitle: 'First contact',
     arc: 'What an AI actually is. How to talk to one. The mental models that stop you from being fooled by it or scared of it.',
     audience: 'New to all of this.',
+    startChapter: 0,
   },
   {
     glyph: '𓊽',
@@ -24,6 +28,7 @@ const TRACKS: Track[] = [
     subtitle: 'Daily fluency',
     arc: 'Bend AI to your work. Prompts that hold. Agents that finish. Pipelines that survive a Monday morning.',
     audience: 'You use it. You want to wield it.',
+    startChapter: 2,
   },
   {
     glyph: '𓂀',
@@ -31,16 +36,8 @@ const TRACKS: Track[] = [
     subtitle: 'Build with it',
     arc: 'Architectures. Evals. Production. The shape of systems that learn, and the seams where they break.',
     audience: 'You ship things. AI is your medium.',
+    startChapter: 3,
   },
-]
-
-const CHAPTERS = [
-  { glyph: '𓇳', title: 'The Tablet', note: 'Foundations & first principles' },
-  { glyph: '𓂀', title: 'The Eye', note: 'How models actually see' },
-  { glyph: '𓋹', title: 'The Voice', note: 'Prompting as craft' },
-  { glyph: '𓊽', title: 'The Pillar', note: 'Agents, tools, memory' },
-  { glyph: '𓆣', title: 'The Forge', note: 'Building & shipping' },
-  { glyph: '𓁹', title: 'The Watchers', note: 'Safety, evals, alignment' },
 ]
 
 export default function Landing({ onClose }: { onClose: () => void }) {

@@ -46,15 +46,37 @@ export default function ChatWidget() {
     setInput('')
     setLoading(true)
     try {
+      // strip the WELCOME message — server doesn't need it
+      const history = next.filter((m) => m.role !== 'assistant' || next.indexOf(m) > 0)
       const r = await fetch('/api/susquehanna-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: next.filter((m) => m !== WELCOME),
-        }),
+        body: JSON.stringify({ messages: history }),
       })
-      const data = await r.json()
-      if (!r.ok) throw new Error(data?.error || `HTTP ${r.status}`)
+      const raw = await r.text()
+      if (!r.ok) {
+        let serverMsg = `HTTP ${r.status}`
+        try {
+          const parsed = JSON.parse(raw)
+          if (parsed?.error) serverMsg = parsed.error
+        } catch {
+          if (raw) serverMsg = `${serverMsg}: ${raw.slice(0, 120)}`
+        }
+        console.error('[susquehanna-chat]', r.status, raw)
+        throw new Error(serverMsg)
+      }
+      if (!raw) {
+        console.error('[susquehanna-chat] empty body, status', r.status)
+        throw new Error('Empty response from server')
+      }
+      let data: { reply?: string }
+      try {
+        data = JSON.parse(raw)
+      } catch {
+        console.error('[susquehanna-chat] non-JSON response:', raw.slice(0, 300))
+        throw new Error('Server returned non-JSON response')
+      }
+      if (!data.reply) throw new Error('No reply field in server response')
       setMessages([...next, { role: 'assistant', content: data.reply }])
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Something went wrong.'

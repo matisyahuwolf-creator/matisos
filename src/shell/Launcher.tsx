@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { apps, type AppEntry } from '../apps'
+import LocalToday from './LocalToday'
 
 function timeOfDayGreeting() {
   const h = new Date().getHours()
@@ -131,8 +132,15 @@ export default function Launcher() {
       </header>
 
       <section
+        className="mb-6 animate-fade-up"
+        style={{ animationDelay: '60ms' }}
+      >
+        <LocalToday />
+      </section>
+
+      <section
         className="mb-8 animate-fade-up"
-        style={{ animationDelay: '80ms' }}
+        style={{ animationDelay: '120ms' }}
       >
         <p className="mb-3 px-1 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
           {loadRecentSlug() ? 'Where you left off' : 'Featured today'}
