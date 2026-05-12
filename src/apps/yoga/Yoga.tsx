@@ -182,7 +182,7 @@ export default function Yoga() {
   }, [library, librarySearch, filter])
 
   const filters: FilterDifficulty[] = ['All', 'Beginner', 'Intermediate', 'Advanced']
-  const [tab, setTab] = useState<TabKey>('today')
+  const [tab, setTab] = useState<TabKey>('coach')
 
   return (
     <div className="flex flex-col gap-5">
@@ -324,8 +324,8 @@ export default function Yoga() {
 }
 
 const TABS: { key: TabKey; label: string }[] = [
+  { key: 'coach', label: 'Begin' },
   { key: 'today', label: 'Today' },
-  { key: 'coach', label: 'Coach' },
   { key: 'programs', label: 'Programs' },
   { key: 'sessions', label: 'Sessions' },
   { key: 'library', label: 'Library' },

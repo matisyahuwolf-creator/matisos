@@ -4,108 +4,106 @@ import { poseImageUrl } from './pose-images'
 import SessionRunner from './SessionRunner'
 import type { Session, SessionStep } from './sessions'
 
-type GeneratedStep = SessionStep & { rationale?: string }
-
-type GeneratedSession = {
-  name: string
-  description: string
-  arc?: string
-  steps: GeneratedStep[]
+type FirstMove = {
+  poseId: string
+  instruction: string
+  durationSec: number
+  whyItHelps: string
 }
 
-type Message =
-  | { role: 'user'; text: string }
-  | { role: 'assistant'; session?: GeneratedSession; error?: string }
+type StarterStep = {
+  poseId: string
+  instruction: string
+  durationSec: number
+  breathingCue?: string
+  energyLevel?: string
+}
 
-const MOODS: { emoji: string; label: string; prompt: string }[] = [
+type StarterSession = {
+  title: string
+  state: string
+  durationSec: number
+  openingReassurance: string
+  firstMove: FirstMove
+  steps: StarterStep[]
+  optionalContinue: string
+  completionMessage: string
+  safetyNote: string
+}
+
+const STATES: { emoji: string; label: string; prompt: string }[] = [
   {
-    emoji: '😰',
-    label: 'Fearful',
+    emoji: '❄️',
+    label: 'Frozen',
     prompt:
-      "I feel fear or anxiety. There's a charged activation in my nervous system. I need to settle into safety.",
+      "I feel frozen — shut down, numb, can't move. Use Frozen Mode. Start with one breath or one touch. Seated or lying down.",
   },
   {
-    emoji: '😔',
-    label: 'Grieving',
+    emoji: '⚡',
+    label: 'Restless',
     prompt:
-      "I feel sadness or grief — something heavy is pressing on my chest. I need space to feel it and gentle support.",
+      'I feel restless — too much energy, agitated, anxious. Use Restless Mode. Start with gentle movement before stillness.',
   },
   {
-    emoji: '🔥',
-    label: 'Angry',
+    emoji: '🪢',
+    label: 'Tense',
     prompt:
-      "I feel anger or frustration — there's heat I need to move through my body before it gets stuck.",
+      'I feel tense — contracted, gripping, tight. Use Restless Mode. Move to release before any stillness.',
   },
   {
     emoji: '🌀',
     label: 'Scattered',
     prompt:
-      "My mind is scattered, restless, can't focus. I need to gather myself back into my body.",
-  },
-  {
-    emoji: '😶',
-    label: 'Numb',
-    prompt:
-      "I feel disconnected from my body — numb, dissociated. I need to gently come back into sensation.",
-  },
-  {
-    emoji: '🪫',
-    label: 'Depleted',
-    prompt:
-      "I am completely depleted, drained. I have nothing left to give. I need to receive rest.",
-  },
-  {
-    emoji: '🌊',
-    label: 'Overwhelmed',
-    prompt:
-      "Everything feels like too much. My system is flooded. I need a small, contained, simple practice.",
+      "I feel scattered — can't focus, ADHD-brain, too many things. Use Scattered Mode. One pose, short and concrete. No choices.",
   },
   {
     emoji: '🪨',
-    label: 'Stuck',
+    label: 'Heavy',
     prompt:
-      "I feel stagnant, frozen, stuck — energy not flowing. I need something to shift and move me.",
+      'I feel heavy — depleted, weighted down, dorsal-vagal. Use Frozen Mode. Very small. Lying down is fine.',
   },
   {
-    emoji: '🌫️',
-    label: 'Foggy',
+    emoji: '🙈',
+    label: 'Avoiding',
     prompt:
-      'My head is foggy, my thinking unclear. I need to drop out of my head and into the body.',
+      "I've been avoiding starting. Use Just Start Mode with extra dignity. Smallest possible action. No reference to 'finally' or 'consistency'.",
   },
   {
-    emoji: '⚓',
-    label: 'Ungrounded',
+    emoji: '😞',
+    label: 'Ashamed',
     prompt:
-      "I feel ungrounded, floaty, unsteady. I need to root down into the earth and feel held.",
+      'I feel ashamed — like I failed again. Use Shame Mode. Long opening reassurance. No streak language. No guilt. Dignity first.',
   },
   {
-    emoji: '☀️',
-    label: 'Open',
+    emoji: '😴',
+    label: 'Tired',
     prompt:
-      "I feel open, alive, ready. I want to deepen this feeling and honor it in my body.",
+      'I feel tired — low energy. Use Frozen Mode with very gentle movement. Permission to do almost nothing.',
   },
   {
-    emoji: '✨',
-    label: 'Just guide me',
-    prompt: 'I don\'t know what I need. Give me what feels balanced and restorative.',
+    emoji: '▶️',
+    label: 'Just start',
+    prompt:
+      'I just need to start. Use Just Start Mode. Give me the smallest possible action — one breath, one stretch.',
   },
+]
+
+const LOADING_STATUSES = [
+  'Meeting you where you are',
+  'Listening to your body',
+  'Finding the smallest step',
+  'Making it safe to begin',
+  'Almost there',
 ]
 
 function poseName(id: string): string {
   return catalog.find((p) => p.id === id)?.name ?? id
 }
 
-function totalMinutes(steps: SessionStep[]): number {
-  const sec = steps.reduce(
-    (acc, s) => acc + s.durationSec * (s.perSide ? 2 : 1),
-    0,
-  )
-  return Math.round(sec / 60)
-}
-
 export default function Coach() {
-  const [history, setHistory] = useState<Message[]>([])
+  const [history, setHistory] = useState<StarterSession[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [running, setRunning] = useState<Session | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
 
@@ -113,10 +111,9 @@ export default function Coach() {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [history, loading])
 
-  async function sendMessage(text: string) {
-    const trimmed = text.trim()
-    if (!trimmed || loading) return
-
+  async function generate(promptText: string) {
+    if (loading) return
+    setError(null)
     setLoading(true)
 
     const controller = new AbortController()
@@ -131,81 +128,98 @@ export default function Coach() {
       const res = await fetch('/api/generate-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmed, poses }),
+        body: JSON.stringify({ message: promptText, poses }),
         signal: controller.signal,
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok || !data.steps) {
-        const msg = data.error ?? `Request failed (${res.status})`
-        setHistory((prev) => [...prev, { role: 'assistant', error: msg }])
-      } else {
-        setHistory((prev) => [...prev, { role: 'assistant', session: data }])
+      if (!res.ok || !data.firstMove) {
+        throw new Error(data.error ?? `Request failed (${res.status})`)
       }
+      setHistory((prev) => [data as StarterSession, ...prev])
     } catch (err) {
       const isAbort = err instanceof DOMException && err.name === 'AbortError'
       const msg = isAbort
-        ? 'Took too long (>45s). Try again — the model may be cold-starting.'
+        ? 'Took too long. Try again in a moment.'
         : err instanceof Error
           ? err.message
-          : 'Connection failed'
-      setHistory((prev) => [...prev, { role: 'assistant', error: msg }])
+          : 'Something got in the way. Try again.'
+      setError(msg)
     } finally {
       clearTimeout(timeoutId)
       setLoading(false)
     }
   }
 
-  function runSession(gen: GeneratedSession) {
-    const minutes = totalMinutes(gen.steps)
+  function runStarter(s: StarterSession) {
+    const steps: SessionStep[] = [
+      {
+        poseId: s.firstMove.poseId,
+        durationSec: s.firstMove.durationSec,
+        cue: s.firstMove.instruction,
+        rationale: s.firstMove.whyItHelps,
+      },
+      ...s.steps.map((step) => ({
+        poseId: step.poseId,
+        durationSec: step.durationSec,
+        cue: step.breathingCue
+          ? `${step.instruction} ${step.breathingCue}`
+          : step.instruction,
+      })),
+    ]
     const session: Session = {
-      id: `custom-${Date.now()}`,
-      name: gen.name,
-      focus: 'Heart Opening',
+      id: `starter-${Date.now()}`,
+      name: s.title,
+      focus: 'Grounding',
       difficulty: 'Beginner',
-      durationMin: minutes,
+      durationMin: Math.max(1, Math.round(s.durationSec / 60)),
       icon: '✨',
       gradient: 'from-violet-500 via-purple-600 to-fuchsia-700',
-      description: gen.description,
-      steps: gen.steps,
+      description: s.openingReassurance,
+      steps,
     }
     setRunning(session)
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <header className="px-1">
-        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
-          Coach
-        </p>
-        <h2 className="mt-0.5 text-2xl font-bold text-slate-900">
-          How do you feel?
+        <h2 className="font-display text-[36px] italic leading-[1.05] tracking-tight text-slate-900 sm:text-[44px]">
+          Come as you are.
         </h2>
-        <p className="mt-1 text-[13px] text-slate-500">
-          Tap a mood. I'll build a session for it.
+        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-slate-600">
+          Where are you right now? Tap one — I'll help you begin with the
+          smallest reset that works.
         </p>
       </header>
 
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-        {MOODS.map((m) => (
+      <div className="grid grid-cols-3 gap-2">
+        {STATES.map((s) => (
           <button
-            key={m.label}
-            onClick={() => sendMessage(m.prompt)}
+            key={s.label}
+            onClick={() => generate(s.prompt)}
             disabled={loading}
-            className="flex flex-col items-center gap-1 rounded-xl bg-white p-3 ring-1 ring-black/5 press hover:bg-slate-50 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex flex-col items-center gap-1 rounded-2xl bg-white p-3 ring-1 ring-black/5 press hover:bg-slate-50 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <span className="text-2xl">{m.emoji}</span>
+            <span className="text-2xl">{s.emoji}</span>
             <span className="text-[11px] font-semibold text-slate-700">
-              {m.label}
+              {s.label}
             </span>
           </button>
         ))}
       </div>
 
-      <div className="flex flex-col gap-3">
-        {history.map((msg, i) => (
-          <MessageView key={i} msg={msg} onRun={runSession} />
+      {loading && <LoadingMandala />}
+
+      {error && (
+        <div className="rounded-xl bg-red-50 px-4 py-3 text-[13px] text-red-800 ring-1 ring-red-200">
+          {error}
+        </div>
+      )}
+
+      <div className="flex flex-col gap-4">
+        {history.map((s, i) => (
+          <StarterCard key={i} starter={s} onRun={() => runStarter(s)} />
         ))}
-        {loading && <LoadingBubble />}
         <div ref={endRef} />
       </div>
 
@@ -219,44 +233,119 @@ export default function Coach() {
   )
 }
 
-function MessageView({
-  msg,
+function StarterCard({
+  starter,
   onRun,
 }: {
-  msg: Message
-  onRun: (s: GeneratedSession) => void
+  starter: StarterSession
+  onRun: () => void
 }) {
-  if (msg.role === 'user') {
-    return (
-      <div className="self-end max-w-[85%] rounded-2xl rounded-br-md bg-[#0071e3] px-4 py-2 text-[14px] text-white">
-        {msg.text}
+  const totalMin = Math.max(1, Math.round(starter.durationSec / 60))
+  const totalLabel =
+    starter.durationSec < 60
+      ? `${starter.durationSec}s`
+      : starter.durationSec < 120
+        ? `~1 min`
+        : `~${totalMin} min`
+
+  return (
+    <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/5">
+      <button
+        onClick={onRun}
+        className="psychedelic-shimmer w-full bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-700 p-5 text-left text-white press hover:brightness-105 active:scale-[0.995]"
+      >
+        {starter.state && (
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/85">
+            {starter.state} · {totalLabel}
+          </p>
+        )}
+        <h3 className="mt-1 font-display text-[26px] italic leading-tight">
+          {starter.title}
+        </h3>
+        {starter.openingReassurance && (
+          <p className="mt-3 text-[14px] leading-relaxed text-white/95">
+            {starter.openingReassurance}
+          </p>
+        )}
+        <div className="mt-4 flex items-center justify-between rounded-xl bg-white/15 px-4 py-3 backdrop-blur">
+          <span className="text-[13px] font-bold uppercase tracking-[0.12em]">
+            Begin
+          </span>
+          <span className="text-lg">▶</span>
+        </div>
+      </button>
+
+      <div className="border-b border-slate-100 bg-amber-50/40 px-5 py-4">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-800">
+          First move
+        </p>
+        <div className="mt-2 flex items-start gap-3">
+          <img
+            src={poseImageUrl(starter.firstMove.poseId, 200)}
+            alt=""
+            loading="lazy"
+            className="h-16 w-16 shrink-0 rounded-xl bg-white object-cover ring-1 ring-black/5"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-semibold text-slate-900">
+              {poseName(starter.firstMove.poseId)}
+              <span className="ml-2 text-[11px] font-medium text-slate-500">
+                {starter.firstMove.durationSec}s
+              </span>
+            </p>
+            <p className="mt-1 text-[13px] leading-snug text-slate-700">
+              {starter.firstMove.instruction}
+            </p>
+            {starter.firstMove.whyItHelps && (
+              <p className="mt-1.5 text-[12px] italic leading-snug text-slate-500">
+                {starter.firstMove.whyItHelps}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
-    )
-  }
-  if (msg.error) {
-    return (
-      <div className="self-start max-w-[85%] rounded-2xl rounded-bl-md bg-red-50 px-4 py-2 text-[13px] text-red-700 ring-1 ring-red-200">
-        Couldn't build a session — {msg.error}
-      </div>
-    )
-  }
-  if (msg.session) {
-    return <GeneratedCard session={msg.session} onRun={() => onRun(msg.session!)} />
-  }
-  return null
+
+      {starter.steps.length > 0 && (
+        <ol className="divide-y divide-slate-100">
+          {starter.steps.map((step, i) => (
+            <li key={i} className="flex items-start gap-3 px-5 py-3">
+              <img
+                src={poseImageUrl(step.poseId, 160)}
+                alt=""
+                loading="lazy"
+                className="h-12 w-12 shrink-0 rounded-lg bg-white object-cover ring-1 ring-black/5"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-semibold text-slate-900">
+                  {poseName(step.poseId)}
+                  <span className="ml-2 text-[11px] font-medium text-slate-500">
+                    {step.durationSec}s
+                  </span>
+                </p>
+                <p className="mt-0.5 text-[12px] leading-snug text-slate-600">
+                  {step.instruction}
+                </p>
+                {step.breathingCue && (
+                  <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
+                    {step.breathingCue}
+                  </p>
+                )}
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {starter.safetyNote && (
+        <div className="border-t border-slate-100 bg-slate-50 px-5 py-3 text-[11px] italic leading-relaxed text-slate-500">
+          {starter.safetyNote}
+        </div>
+      )}
+    </div>
+  )
 }
 
-const LOADING_STATUSES = [
-  'Sensing what you need',
-  'Reading the body',
-  'Choosing poses',
-  'Sequencing the flow',
-  'Writing the reasoning',
-  'Tuning the breath',
-  'Almost there',
-]
-
-function LoadingBubble() {
+function LoadingMandala() {
   const [statusIndex, setStatusIndex] = useState(0)
 
   useEffect(() => {
@@ -267,18 +356,15 @@ function LoadingBubble() {
   }, [])
 
   return (
-    <div className="relative flex flex-col items-center justify-center gap-6 overflow-hidden rounded-2xl bg-gradient-to-br from-violet-50 via-rose-50 to-amber-50 px-4 py-12 ring-1 ring-violet-200/40">
-      {/* Soft glow background */}
+    <div className="relative flex flex-col items-center justify-center gap-6 overflow-hidden rounded-2xl bg-gradient-to-br from-violet-50 via-rose-50 to-amber-50 px-4 py-10 ring-1 ring-violet-200/40">
       <div
         className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-violet-300/35 via-fuchsia-300/30 to-amber-300/35 blur-3xl"
         style={{ animation: 'hueShift 10s linear infinite' }}
       />
-
       <div
-        className="relative h-44 w-44"
+        className="relative h-36 w-36"
         style={{ animation: 'hueShift 14s linear infinite' }}
       >
-        {/* Outer ring — 12 small dots, slow clockwise */}
         <svg
           className="absolute inset-0"
           viewBox="0 0 200 200"
@@ -292,23 +378,9 @@ function LoadingBubble() {
             const angle = (i * 30 * Math.PI) / 180
             const cx = 100 + 88 * Math.cos(angle)
             const cy = 100 + 88 * Math.sin(angle)
-            return (
-              <circle
-                key={i}
-                cx={cx}
-                cy={cy}
-                r="3"
-                fill="#a78bfa"
-                style={{
-                  animation: `mandalaPetal 3s ease-in-out infinite ${i * 0.2}s`,
-                  transformOrigin: `${cx}px ${cy}px`,
-                }}
-              />
-            )
+            return <circle key={i} cx={cx} cy={cy} r="3" fill="#a78bfa" />
           })}
         </svg>
-
-        {/* Middle ring — 6 petals, counter-clockwise */}
         <svg
           className="absolute inset-0"
           viewBox="0 0 200 200"
@@ -332,171 +404,26 @@ function LoadingBubble() {
                 fill="#ec4899"
                 opacity="0.7"
                 transform={`rotate(${i * 60} ${cx} ${cy})`}
-                style={{
-                  animation: `mandalaPetal 4s ease-in-out infinite ${i * 0.3}s`,
-                  transformOrigin: `${cx}px ${cy}px`,
-                }}
               />
             )
           })}
         </svg>
-
-        {/* Inner triangle ring */}
-        <svg
-          className="absolute inset-0"
-          viewBox="0 0 200 200"
-          style={{
-            animation: 'mandalaSlow 11s linear infinite',
-            transformOrigin: 'center',
-          }}
-          aria-hidden
-        >
-          {Array.from({ length: 3 }).map((_, i) => {
-            const angle = (i * 120 * Math.PI) / 180
-            const cx = 100 + 32 * Math.cos(angle)
-            const cy = 100 + 32 * Math.sin(angle)
-            return (
-              <circle
-                key={i}
-                cx={cx}
-                cy={cy}
-                r="6"
-                fill="#fb923c"
-                opacity="0.85"
-              />
-            )
-          })}
-        </svg>
-
-        {/* Inner pulse core */}
         <div
           className="absolute left-1/2 top-1/2 h-12 w-12 rounded-full bg-gradient-to-br from-amber-300 via-rose-400 to-fuchsia-500 shadow-xl"
           style={{ animation: 'mandalaBreath 3s ease-in-out infinite' }}
         />
       </div>
-
-      {/* Cycling status text */}
       <div className="relative h-5 w-full text-center">
         {LOADING_STATUSES.map((s, i) => (
           <p
             key={s}
-            className="absolute inset-0 text-[13px] font-medium uppercase tracking-[0.16em] text-violet-800/80 transition-opacity duration-500"
+            className="absolute inset-0 text-[12px] font-medium uppercase tracking-[0.16em] text-violet-800/80 transition-opacity duration-500"
             style={{ opacity: statusIndex === i ? 1 : 0 }}
           >
             {s}…
           </p>
         ))}
       </div>
-    </div>
-  )
-}
-
-function PoseThumbnail({ poseId }: { poseId: string }) {
-  return (
-    <img
-      src={poseImageUrl(poseId, 200)}
-      alt=""
-      loading="lazy"
-      className="h-16 w-16 shrink-0 rounded-xl bg-white object-cover ring-1 ring-black/5"
-    />
-  )
-}
-
-function StepRow({ step, index }: { step: GeneratedStep; index: number }) {
-  const [open, setOpen] = useState(false)
-  const dur = step.perSide
-    ? `${step.durationSec}s / side`
-    : `${step.durationSec}s`
-  return (
-    <li className="px-4 py-3">
-      <div className="flex items-start gap-3">
-        <PoseThumbnail poseId={step.poseId} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline justify-between gap-2">
-            <p className="truncate text-[15px] font-semibold text-slate-900">
-              <span className="text-slate-400">{index + 1}.</span>{' '}
-              {poseName(step.poseId)}
-            </p>
-            <p className="shrink-0 text-[11px] font-medium text-slate-500">
-              {dur}
-            </p>
-          </div>
-          {step.cue && (
-            <p className="mt-1 text-[12px] leading-snug text-slate-600">
-              {step.cue}
-            </p>
-          )}
-          {step.rationale && (
-            <button
-              onClick={() => setOpen((o) => !o)}
-              className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-violet-700 hover:text-violet-900"
-            >
-              {open ? '− Hide reasoning' : '+ Why this pose'}
-            </button>
-          )}
-          {open && step.rationale && (
-            <p className="mt-2 rounded-lg bg-amber-50/60 px-2.5 py-1.5 text-[12px] leading-snug italic text-slate-700">
-              {step.rationale}
-            </p>
-          )}
-        </div>
-      </div>
-    </li>
-  )
-}
-
-function GeneratedCard({
-  session,
-  onRun,
-}: {
-  session: GeneratedSession
-  onRun: () => void
-}) {
-  const minutes = totalMinutes(session.steps)
-  const [arcOpen, setArcOpen] = useState(false)
-  return (
-    <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/5">
-      <button
-        onClick={onRun}
-        className="psychedelic-shimmer w-full bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-700 p-5 text-left text-white press hover:brightness-105 active:scale-[0.995]"
-      >
-        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/85">
-          Custom · {session.steps.length} poses · ~{minutes} min
-        </p>
-        <h3 className="mt-1 text-xl font-bold leading-tight">{session.name}</h3>
-        <p className="mt-2 text-[13px] leading-relaxed text-white/90">
-          {session.description}
-        </p>
-        <div className="mt-4 flex items-center justify-between rounded-xl bg-white/15 px-4 py-3 backdrop-blur">
-          <span className="text-[13px] font-bold uppercase tracking-[0.12em]">
-            Tap to begin
-          </span>
-          <span className="text-lg">▶</span>
-        </div>
-      </button>
-
-      {session.arc && (
-        <div className="border-b border-slate-100 px-5 py-3">
-          <button
-            onClick={() => setArcOpen((o) => !o)}
-            className="flex w-full items-center justify-between text-[11px] font-bold uppercase tracking-[0.12em] text-violet-700"
-          >
-            <span>The arc</span>
-            <span className="text-[12px]">{arcOpen ? '−' : '+'}</span>
-          </button>
-          {arcOpen && (
-            <p className="mt-1.5 text-[12px] leading-relaxed italic text-slate-600">
-              {session.arc}
-            </p>
-          )}
-        </div>
-      )}
-
-      <ol className="divide-y divide-slate-100">
-        {session.steps.map((step, i) => (
-          <StepRow key={i} step={step} index={i} />
-        ))}
-      </ol>
     </div>
   )
 }
