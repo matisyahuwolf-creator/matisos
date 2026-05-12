@@ -4,7 +4,7 @@ import { sessions, type Session } from './sessions'
 import { phaseFor, phaseStartWeek, tracks } from './tracks'
 import SessionRunner from './SessionRunner'
 import { historyStats, loadHistory } from './history'
-import { topSkills, totalSkillPoints } from './skills'
+import { SKILLS, loadSkillPoints, type SkillId } from './skills'
 
 type ActiveTrackState = {
   trackId: string
@@ -157,6 +157,8 @@ export default function Today({ stats, onSwitchTab }: TodayProps) {
 
       <PracticeDashboard />
 
+      <SkillsOverview />
+
       <div className="flex items-stretch rounded-xl bg-white px-2 py-3 ring-1 ring-black/5">
         <StatBlock value={stats.working} label="Working on" />
         <Divider />
@@ -199,13 +201,16 @@ function Divider() {
   return <div className="self-center h-8 w-px bg-slate-200" />
 }
 
+function totalPoints(pts: Partial<Record<SkillId, number>>): number {
+  return Object.values(pts).reduce((a, b) => a + (b ?? 0), 0)
+}
+
 function PracticeDashboard() {
   const history = useMemo(loadHistory, [])
   if (history.length === 0) return null
   const stats = historyStats(history)
   const totalMin = Math.round(stats.totalSec / 60)
-  const points = totalSkillPoints()
-  const skills = topSkills(undefined, 4)
+  const points = totalPoints(loadSkillPoints())
   const last = stats.lastAt ? new Date(stats.lastAt) : null
   function lastLabel(d: Date): string {
     const diff = Date.now() - d.getTime()
@@ -231,38 +236,117 @@ function PracticeDashboard() {
         <DashStat value={stats.streak} label="day streak" />
         <DashStat value={points} label="skill points" />
       </div>
-      {skills.length > 0 && (
-        <div className="border-t border-slate-100 px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-            Top skills developing
-          </p>
-          <ul className="mt-2 flex flex-col gap-1.5">
-            {skills.map(({ skill, points }) => (
-              <li key={skill.id} className="flex items-center gap-2">
-                <span
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-base ${skill.bg}`}
-                >
-                  {skill.emoji}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-semibold text-slate-900">
-                    {skill.name}
-                  </p>
-                </div>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${skill.bg} ${skill.text}`}
-                >
-                  {points} pts
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
       <div className="border-t border-slate-100 bg-slate-50 px-4 py-2.5 text-[12px] text-slate-600">
         Total · {totalMin} min across {stats.total} sessions
         {last && ` · Last: ${lastLabel(last)}`}
       </div>
+    </div>
+  )
+}
+
+function SkillsOverview() {
+  const [expandedId, setExpandedId] = useState<SkillId | null>(null)
+  const points = useMemo(loadSkillPoints, [])
+  const allSkills = useMemo(() => {
+    const ids = Object.keys(SKILLS) as SkillId[]
+    return ids
+      .map((id) => ({ skill: SKILLS[id], pts: points[id] ?? 0 }))
+      .sort((a, b) => b.pts - a.pts)
+  }, [points])
+
+  const developing = allSkills.filter((s) => s.pts > 0).length
+  const max = Math.max(1, ...allSkills.map((s) => s.pts))
+
+  return (
+    <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/5">
+      <div className="border-b border-slate-100 px-4 py-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+          Skills
+        </p>
+        <h3 className="mt-0.5 font-display text-[20px] italic text-slate-900">
+          {developing > 0
+            ? `${developing} of 10 developing`
+            : 'What you build by showing up'}
+        </h3>
+        <p className="mt-1 text-[12px] leading-snug text-slate-500">
+          Each pose develops specific physical capacities. Tap a skill to see what it means in the body.
+        </p>
+      </div>
+      <ul className="divide-y divide-slate-100">
+        {allSkills.map(({ skill, pts }) => {
+          const isOpen = expandedId === skill.id
+          const pct = Math.min(100, (pts / max) * 100)
+          return (
+            <li key={skill.id}>
+              <button
+                onClick={() => setExpandedId(isOpen ? null : skill.id)}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left press hover:bg-slate-50"
+              >
+                <span
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-lg ${
+                    pts > 0 ? skill.bg : 'bg-slate-100'
+                  }`}
+                >
+                  <span className={pts > 0 ? '' : 'opacity-40'}>
+                    {skill.emoji}
+                  </span>
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p
+                      className={`truncate text-[14px] font-semibold ${
+                        pts > 0 ? 'text-slate-900' : 'text-slate-400'
+                      }`}
+                    >
+                      {skill.name}
+                    </p>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                        pts > 0
+                          ? `${skill.bg} ${skill.text}`
+                          : 'bg-slate-100 text-slate-400'
+                      }`}
+                    >
+                      {pts > 0 ? `${pts} pts` : '—'}
+                    </span>
+                  </div>
+                  {pts > 0 && (
+                    <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className={`h-full rounded-full ${skill.bg.replace('100', '400')}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  className={`shrink-0 text-slate-400 transition-transform ${
+                    isOpen ? 'rotate-90' : ''
+                  }`}
+                  aria-hidden
+                >
+                  <path
+                    d="M4 2L8 6L4 10"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              {isOpen && (
+                <div className="bg-slate-50 px-4 pb-3 pt-1 pl-[64px] text-[12px] leading-relaxed text-slate-600">
+                  {skill.meaning}
+                </div>
+              )}
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }
