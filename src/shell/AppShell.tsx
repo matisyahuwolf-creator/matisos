@@ -45,12 +45,12 @@ export default function AppShell({
         </header>
 
         <div className="mb-5 px-1">
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
-            {app.tagline}
-          </p>
-          <h1 className="mt-1 text-[32px] font-extrabold leading-tight tracking-tight text-slate-900">
+          <h1 className="text-[32px] font-extrabold leading-tight tracking-tight text-slate-900">
             {app.name}
           </h1>
+          <p className="mt-1 font-display text-[16px] italic leading-snug text-slate-600">
+            {app.tagline}
+          </p>
         </div>
 
         <main className="rounded-2xl bg-white p-6 shadow-card ring-1 ring-black/5">

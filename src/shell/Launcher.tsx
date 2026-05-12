@@ -73,13 +73,13 @@ function HeroCard({ app }: { app: AppEntry }) {
     >
       <div className="flex min-h-[460px] flex-col p-6 sm:p-8">
         <div className="flex-1">
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/85">
-            {app.tagline}
-          </p>
-          <h2 className="mt-2 text-[40px] font-extrabold leading-[1.05] tracking-tight text-white sm:text-[48px]">
+          <h2 className="text-[40px] font-extrabold leading-[1.05] tracking-tight text-white sm:text-[48px]">
             {app.name}
           </h2>
-          <p className="mt-4 max-w-md text-base leading-relaxed text-white/90">
+          <p className="mt-2 max-w-md font-display text-[18px] italic leading-snug text-white/95 sm:text-[20px]">
+            {app.tagline}
+          </p>
+          <p className="mt-4 max-w-md text-base leading-relaxed text-white/85">
             {app.description}
           </p>
         </div>
