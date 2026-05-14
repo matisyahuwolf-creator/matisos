@@ -108,6 +108,12 @@ function Lantern() {
           <stop offset="50%" stopColor="#3a200a" />
           <stop offset="100%" stopColor="#1a0a04" />
         </linearGradient>
+        <filter id="lanternFlameBlur" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2" />
+        </filter>
+        <filter id="lanternFlameSoft" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="0.6" />
+        </filter>
       </defs>
       {/* halo behind lantern */}
       <ellipse className="ws-halo" cx="70" cy="118" rx="80" ry="80" fill="url(#lanternHalo)" />
@@ -126,8 +132,14 @@ function Lantern() {
       <rect x="41" y="52" width="58" height="100" fill="url(#lanternGlass)" opacity="0.85" />
       {/* flame */}
       <g className="ws-flame">
-        <ellipse cx="70" cy="108" rx="18" ry="30" fill="url(#lanternFlame)" />
-        <ellipse cx="70" cy="102" rx="6" ry="14" fill="#fff8dc" opacity="0.9" />
+        {/* outer glow */}
+        <ellipse cx="70" cy="108" rx="24" ry="36" fill="url(#lanternFlame)" opacity="0.55" filter="url(#lanternFlameBlur)" />
+        {/* main flame body */}
+        <ellipse cx="70" cy="108" rx="18" ry="30" fill="url(#lanternFlame)" filter="url(#lanternFlameSoft)" />
+        {/* hot center */}
+        <ellipse cx="70" cy="102" rx="6" ry="14" fill="#fff8dc" opacity="0.95" />
+        {/* wick */}
+        <line x1="70" y1="124" x2="70" y2="132" stroke="#1a0a04" strokeWidth="1.5" />
       </g>
       {/* glass highlight */}
       <rect x="45" y="58" width="6" height="88" fill="#fff" opacity="0.06" />
@@ -422,105 +434,212 @@ function BrassCorner({ pos }: { pos: 'tl' | 'tr' | 'bl' | 'br' }) {
   )
 }
 
-// ── Per-app illustrations (richer SVGs with layered gradients) ───────────
+// ── Per-app illustrations (rich SVG with filters + multi-layer paint) ────
 function NebulaIcon() {
   return (
-    <svg viewBox="0 0 100 100" className="h-full w-full">
+    <svg viewBox="0 0 100 100" className="h-full w-full" style={{ overflow: 'visible' }}>
       <defs>
-        <radialGradient id="nebCore" cx="50%" cy="50%" r="20%">
+        <radialGradient id="nebHalo" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fde68a" stopOpacity="0.6" />
+          <stop offset="40%" stopColor="#c026d3" stopOpacity="0.35" />
+          <stop offset="80%" stopColor="#1e1b4b" stopOpacity="0.05" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="nebOuter" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#9333ea" stopOpacity="0.6" />
+          <stop offset="50%" stopColor="#5b21b6" stopOpacity="0.7" />
+          <stop offset="100%" stopColor="#1e1b4b" stopOpacity="0.5" />
+        </radialGradient>
+        <radialGradient id="nebSpiralA" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fde68a" stopOpacity="0.95" />
+          <stop offset="35%" stopColor="#ec4899" stopOpacity="0.85" />
+          <stop offset="100%" stopColor="#7c3aed" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="nebCore" cx="50%" cy="50%" r="22%">
           <stop offset="0%" stopColor="#fff7d6" />
-          <stop offset="100%" stopColor="#fde68a" stopOpacity="0" />
+          <stop offset="50%" stopColor="#fde68a" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#ec4899" stopOpacity="0" />
         </radialGradient>
-        <radialGradient id="nebMid" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#fb7185" />
-          <stop offset="35%" stopColor="#c026d3" stopOpacity="0.9" />
-          <stop offset="70%" stopColor="#6d28d9" stopOpacity="0.85" />
-          <stop offset="100%" stopColor="#1e1b4b" stopOpacity="0.6" />
-        </radialGradient>
-        <radialGradient id="nebGlow" cx="50%" cy="50%" r="55%">
-          <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="#1e1b4b" stopOpacity="0" />
-        </radialGradient>
+        <filter id="nebBlur" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="1.6" />
+        </filter>
+        <filter id="nebSoft" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="0.6" />
+        </filter>
+        <filter id="nebStar">
+          <feGaussianBlur stdDeviation="0.5" />
+        </filter>
       </defs>
-      <circle cx="50" cy="50" r="45" fill="url(#nebGlow)" />
-      <circle cx="50" cy="50" r="38" fill="url(#nebMid)" />
-      <circle cx="50" cy="50" r="14" fill="url(#nebCore)" />
-      <circle cx="22" cy="32" r="1.2" fill="white" />
-      <circle cx="78" cy="42" r="0.8" fill="white" />
-      <circle cx="68" cy="22" r="0.6" fill="white" />
-      <circle cx="32" cy="78" r="1.3" fill="white" opacity="0.9" />
-      <circle cx="86" cy="68" r="0.9" fill="white" />
-      <circle cx="16" cy="62" r="0.7" fill="white" />
-      <circle cx="84" cy="22" r="0.5" fill="white" />
-      <circle cx="48" cy="84" r="0.6" fill="white" opacity="0.7" />
+      {/* outer halo */}
+      <circle cx="50" cy="50" r="50" fill="url(#nebHalo)" />
+      {/* main dark body */}
+      <circle cx="50" cy="50" r="36" fill="url(#nebOuter)" filter="url(#nebSoft)" />
+      {/* dust arms (rotated ellipses for spiral feel) */}
+      <g filter="url(#nebBlur)" opacity="0.85">
+        <ellipse cx="50" cy="50" rx="28" ry="10" fill="url(#nebSpiralA)" transform="rotate(20 50 50)" />
+        <ellipse cx="50" cy="50" rx="26" ry="8" fill="url(#nebSpiralA)" transform="rotate(110 50 50)" opacity="0.7" />
+      </g>
+      {/* glowing core */}
+      <circle cx="50" cy="50" r="18" fill="url(#nebCore)" filter="url(#nebSoft)" />
+      <circle cx="50" cy="50" r="3" fill="#fff7d6" />
+      {/* foreground stars with diffraction spikes */}
+      <g filter="url(#nebStar)">
+        {[
+          { x: 22, y: 30, r: 0.9 },
+          { x: 78, y: 40, r: 0.7 },
+          { x: 70, y: 20, r: 0.5 },
+          { x: 28, y: 80, r: 1.1 },
+          { x: 86, y: 70, r: 0.8 },
+          { x: 14, y: 60, r: 0.7 },
+          { x: 88, y: 22, r: 0.5 },
+          { x: 48, y: 88, r: 0.6 },
+          { x: 32, y: 12, r: 0.4 },
+          { x: 56, y: 8, r: 0.6 },
+        ].map((s, i) => (
+          <g key={i}>
+            <circle cx={s.x} cy={s.y} r={s.r * 2.4} fill="#fff7d6" opacity="0.18" />
+            <circle cx={s.x} cy={s.y} r={s.r} fill="white" />
+          </g>
+        ))}
+        {/* diffraction cross on brightest */}
+        <line x1="22" y1="26" x2="22" y2="34" stroke="white" strokeWidth="0.25" opacity="0.6" />
+        <line x1="18" y1="30" x2="26" y2="30" stroke="white" strokeWidth="0.25" opacity="0.6" />
+        <line x1="28" y1="76" x2="28" y2="84" stroke="white" strokeWidth="0.3" opacity="0.7" />
+        <line x1="24" y1="80" x2="32" y2="80" stroke="white" strokeWidth="0.3" opacity="0.7" />
+      </g>
     </svg>
   )
 }
+
 function FlameIcon() {
   return (
-    <svg viewBox="0 0 100 100" className="h-full w-full">
+    <svg viewBox="0 0 100 100" className="h-full w-full" style={{ overflow: 'visible' }}>
       <defs>
-        <linearGradient id="flameOuter" x1="0" x2="0" y1="1" y2="0">
+        <linearGradient id="fl1" x1="0" x2="0" y1="1" y2="0">
           <stop offset="0%" stopColor="#9333ea" />
           <stop offset="40%" stopColor="#ec4899" />
-          <stop offset="100%" stopColor="#fde68a" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="#fde68a" stopOpacity="0.5" />
         </linearGradient>
-        <linearGradient id="flameMid" x1="0" x2="0" y1="1" y2="0">
-          <stop offset="0%" stopColor="#dc2626" />
-          <stop offset="50%" stopColor="#f97316" />
+        <linearGradient id="fl2" x1="0" x2="0" y1="1" y2="0">
+          <stop offset="0%" stopColor="#b91c1c" />
+          <stop offset="40%" stopColor="#dc2626" />
+          <stop offset="80%" stopColor="#f97316" />
           <stop offset="100%" stopColor="#fde68a" />
         </linearGradient>
-        <linearGradient id="flameInner" x1="0" x2="0" y1="1" y2="0">
-          <stop offset="0%" stopColor="#fde68a" />
+        <linearGradient id="fl3" x1="0" x2="0" y1="1" y2="0">
+          <stop offset="0%" stopColor="#f97316" />
+          <stop offset="50%" stopColor="#fde68a" />
           <stop offset="100%" stopColor="#fff7d6" />
         </linearGradient>
+        <radialGradient id="flHalo" cx="50%" cy="55%" r="50%">
+          <stop offset="0%" stopColor="#fb7185" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0" />
+        </radialGradient>
+        <filter id="flBlur" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="1.2" />
+        </filter>
       </defs>
-      <path d="M50 95 C 20 85, 18 58, 36 38 C 36 50, 46 48, 42 34 C 50 18, 64 16, 58 4 C 80 28, 82 60, 72 80 C 66 92, 60 94, 50 95 Z"
-            fill="url(#flameOuter)" opacity="0.7" />
-      <path d="M50 92 C 26 82, 26 58, 42 42 C 42 52, 50 50, 46 38 C 52 24, 62 22, 58 12 C 76 32, 76 60, 68 78 C 62 88, 58 90, 50 92 Z"
-            fill="url(#flameMid)" />
-      <path d="M50 86 C 36 76, 38 60, 48 50 C 48 56, 53 54, 50 46 C 56 32, 62 32, 60 24 C 68 38, 68 58, 64 72 C 60 82, 56 84, 50 86 Z"
-            fill="url(#flameInner)" opacity="0.85" />
+      <circle cx="50" cy="56" r="42" fill="url(#flHalo)" />
+      {/* outer aura */}
+      <path
+        d="M50 98 C 14 88, 14 56, 34 34 C 34 50, 46 46, 40 28 C 50 12, 66 8, 56 -2 C 84 24, 86 60, 76 84 C 70 94, 62 96, 50 98 Z"
+        fill="url(#fl1)" opacity="0.6" filter="url(#flBlur)"
+      />
+      {/* mid flame body */}
+      <path
+        d="M50 94 C 22 82, 22 56, 40 40 C 40 54, 50 52, 44 38 C 52 22, 64 18, 56 8 C 78 28, 78 60, 70 80 C 64 90, 58 92, 50 94 Z"
+        fill="url(#fl2)"
+      />
+      {/* hot inner core */}
+      <path
+        d="M50 86 C 34 76, 36 58, 46 48 C 46 56, 53 54, 50 44 C 56 32, 62 30, 58 22 C 70 36, 70 58, 64 72 C 60 82, 56 84, 50 86 Z"
+        fill="url(#fl3)" opacity="0.92"
+      />
+      {/* white-hot tip */}
+      <ellipse cx="55" cy="50" rx="3" ry="6" fill="#fff7d6" opacity="0.85" />
+      {/* sparks */}
+      <circle cx="38" cy="30" r="0.6" fill="#fde68a" />
+      <circle cx="64" cy="22" r="0.5" fill="#fff7d6" />
+      <circle cx="72" cy="44" r="0.4" fill="#fde68a" />
+      <circle cx="30" cy="58" r="0.5" fill="#fff7d6" opacity="0.8" />
     </svg>
   )
 }
+
 function RingIcon() {
   return (
     <svg viewBox="0 0 100 100" className="h-full w-full">
       <defs>
-        <linearGradient id="ringG" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#6b6b6b" />
-          <stop offset="50%" stopColor="#9a9a9a" />
+        <linearGradient id="ringMain" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#9a9a9a" />
+          <stop offset="35%" stopColor="#cdcdcd" />
+          <stop offset="65%" stopColor="#7a7a7a" />
+          <stop offset="100%" stopColor="#4a4a4a" />
+        </linearGradient>
+        <linearGradient id="ringInner" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#2a2a2a" />
           <stop offset="100%" stopColor="#5a5a5a" />
         </linearGradient>
+        <filter id="ringInset" x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation="0.6" />
+        </filter>
       </defs>
-      <circle cx="50" cy="50" r="34" stroke="url(#ringG)" strokeWidth="8" fill="none" />
-      <circle cx="50" cy="50" r="34" stroke="#fff" strokeWidth="1" fill="none" opacity="0.4" />
-      <circle cx="50" cy="50" r="30" stroke="#3a3a3a" strokeWidth="0.5" fill="none" />
+      {/* outer ring (3D effect) */}
+      <circle cx="50" cy="50" r="38" fill="url(#ringMain)" />
+      <circle cx="50" cy="50" r="29" fill="url(#ringInner)" filter="url(#ringInset)" />
+      {/* inner highlight (top arc) */}
+      <path d="M 22 50 A 28 28 0 0 1 78 50" stroke="#fff" strokeWidth="0.8" fill="none" opacity="0.45" />
+      {/* outer highlight (top arc) */}
+      <path d="M 14 50 A 36 36 0 0 1 86 50" stroke="#fff" strokeWidth="1" fill="none" opacity="0.55" />
+      {/* under-shadow (bottom arc) */}
+      <path d="M 16 52 A 34 34 0 0 0 84 52" stroke="#0a0a0a" strokeWidth="0.8" fill="none" opacity="0.5" />
+      {/* tiny brass screw at top */}
+      <circle cx="50" cy="14" r="2.4" fill="#c9a14a" stroke="#3a2814" strokeWidth="0.4" />
+      <line x1="48" y1="14" x2="52" y2="14" stroke="#3a2814" strokeWidth="0.4" />
     </svg>
   )
 }
+
 function EyeRaysIcon() {
   return (
-    <svg viewBox="0 0 100 100" className="h-full w-full">
+    <svg viewBox="0 0 100 100" className="h-full w-full" style={{ overflow: 'visible' }}>
       <defs>
-        <radialGradient id="eyeIris" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#fde68a" />
-          <stop offset="55%" stopColor="#c9a14a" />
+        <radialGradient id="eyeIris2" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fff7d6" />
+          <stop offset="40%" stopColor="#fde68a" />
+          <stop offset="80%" stopColor="#c9a14a" />
           <stop offset="100%" stopColor="#5a3a14" />
         </radialGradient>
+        <radialGradient id="eyeHalo" cx="50%" cy="55%" r="50%">
+          <stop offset="0%" stopColor="#fde68a" stopOpacity="0.45" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0" />
+        </radialGradient>
+        <filter id="eyeBlur" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="0.4" />
+        </filter>
       </defs>
-      {/* eye almond shape */}
-      <ellipse cx="50" cy="38" rx="15" ry="8.5" stroke="#c9a14a" strokeWidth="1.6" fill="none" />
-      <circle cx="50" cy="38" r="5.5" fill="url(#eyeIris)" />
-      <circle cx="50" cy="38" r="2.2" fill="#0a0604" />
-      <circle cx="51.5" cy="36.5" r="1" fill="#fff" opacity="0.6" />
-      {/* radiating rays */}
-      {Array.from({ length: 11 }).map((_, i) => {
-        const a = (i - 5) * 14
+      <circle cx="50" cy="60" r="44" fill="url(#eyeHalo)" />
+      {/* almond shape */}
+      <path
+        d="M 30 36 Q 50 22 70 36 Q 50 50 30 36 Z"
+        stroke="#c9a14a" strokeWidth="1.8" fill="#1a0a04" filter="url(#eyeBlur)"
+      />
+      {/* iris with glow */}
+      <circle cx="50" cy="36" r="7.5" fill="url(#eyeIris2)" />
+      <circle cx="50" cy="36" r="3" fill="#0a0604" />
+      <circle cx="51.5" cy="34.5" r="1.5" fill="#fff7d6" opacity="0.8" />
+      {/* upper eyelid line */}
+      <path d="M 30 36 Q 50 24 70 36" stroke="#8b6914" strokeWidth="0.8" fill="none" opacity="0.7" />
+      {/* lashes */}
+      <line x1="36" y1="27" x2="34" y2="22" stroke="#5a3a14" strokeWidth="0.5" />
+      <line x1="50" y1="22" x2="50" y2="17" stroke="#5a3a14" strokeWidth="0.5" />
+      <line x1="64" y1="27" x2="66" y2="22" stroke="#5a3a14" strokeWidth="0.5" />
+      {/* radiating rays of varying length */}
+      {Array.from({ length: 13 }).map((_, i) => {
+        const a = (i - 6) * 13
         const r1 = 14
-        const r2 = 42
-        const cx = 50, cy = 58
+        const r2 = 38 + (i % 3) * 4
+        const cx = 50, cy = 56
         return (
           <line
             key={i}
@@ -529,71 +648,135 @@ function EyeRaysIcon() {
             x2={cx + Math.sin((a * Math.PI) / 180) * r2}
             y2={cy + Math.cos((a * Math.PI) / 180) * r2}
             stroke="#c9a14a"
-            strokeWidth="1.3"
+            strokeWidth={i % 3 === 0 ? 1.6 : 1.0}
             strokeLinecap="round"
+            opacity={i % 2 === 0 ? 1 : 0.75}
           />
         )
       })}
     </svg>
   )
 }
+
 function StarIcon() {
   return (
-    <svg viewBox="0 0 100 100" className="h-full w-full">
+    <svg viewBox="0 0 100 100" className="h-full w-full" style={{ overflow: 'visible' }}>
       <defs>
-        <radialGradient id="starG" cx="50%" cy="50%" r="50%">
+        <radialGradient id="starG2" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="#fff7d6" />
-          <stop offset="40%" stopColor="#fde68a" />
-          <stop offset="75%" stopColor="#e0617a" />
+          <stop offset="35%" stopColor="#fde68a" />
+          <stop offset="70%" stopColor="#fb7185" />
           <stop offset="100%" stopColor="#5a2b4a" />
         </radialGradient>
-        <radialGradient id="starGlow" cx="50%" cy="50%" r="60%">
-          <stop offset="0%" stopColor="#fde68a" stopOpacity="0.5" />
-          <stop offset="100%" stopColor="#fff7d6" stopOpacity="0" />
+        <radialGradient id="starGlow2" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fde68a" stopOpacity="0.55" />
+          <stop offset="60%" stopColor="#fb7185" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0" />
         </radialGradient>
+        <filter id="starBlur" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="1.5" />
+        </filter>
+        <filter id="starSoft">
+          <feGaussianBlur stdDeviation="0.3" />
+        </filter>
       </defs>
-      <circle cx="50" cy="50" r="40" fill="url(#starGlow)" />
-      <polygon points="50,8 55,45 92,50 55,55 50,92 45,55 8,50 45,45" fill="url(#starG)" />
-      <polygon points="50,30 52,48 70,50 52,52 50,70 48,52 30,50 48,48" fill="#fff7d6" opacity="0.85" />
+      {/* big halo */}
+      <circle cx="50" cy="50" r="50" fill="url(#starGlow2)" />
+      <circle cx="50" cy="50" r="35" fill="url(#starGlow2)" opacity="0.6" filter="url(#starBlur)" />
+      {/* 4-point star body */}
+      <polygon points="50,4 56,44 96,50 56,56 50,96 44,56 4,50 44,44" fill="url(#starG2)" filter="url(#starSoft)" />
+      {/* inner brighter point */}
+      <polygon points="50,22 53,48 78,50 53,52 50,78 47,52 22,50 47,48" fill="#fff7d6" opacity="0.85" />
+      {/* center hot spot */}
+      <circle cx="50" cy="50" r="3" fill="#fff" />
+      {/* sparkles around */}
+      <circle cx="80" cy="22" r="1" fill="#fde68a" opacity="0.9" />
+      <circle cx="22" cy="80" r="0.8" fill="#fde68a" opacity="0.85" />
+      <circle cx="80" cy="78" r="0.6" fill="#fff7d6" opacity="0.8" />
+      <circle cx="20" cy="20" r="0.5" fill="#fff7d6" opacity="0.8" />
     </svg>
   )
 }
+
 function MoonIcon() {
   return (
     <svg viewBox="0 0 100 100" className="h-full w-full">
       <defs>
-        <linearGradient id="moonG" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%" stopColor="#a78bfa" />
-          <stop offset="60%" stopColor="#22d3ee" />
-          <stop offset="100%" stopColor="#06b6d4" />
+        <linearGradient id="moonLit" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stopColor="#c4b5fd" />
+          <stop offset="50%" stopColor="#7dd3fc" />
+          <stop offset="100%" stopColor="#0891b2" />
         </linearGradient>
-        <radialGradient id="moonGlow" cx="60%" cy="50%" r="60%">
-          <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="#1e1b4b" stopOpacity="0" />
+        <radialGradient id="moonGlow2" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.45" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0" />
         </radialGradient>
+        <radialGradient id="moonShade" cx="30%" cy="50%" r="60%">
+          <stop offset="0%" stopColor="#312e81" />
+          <stop offset="100%" stopColor="#0c0a18" />
+        </radialGradient>
+        <filter id="moonSoft">
+          <feGaussianBlur stdDeviation="0.4" />
+        </filter>
       </defs>
-      <circle cx="50" cy="50" r="40" fill="url(#moonGlow)" />
-      <circle cx="50" cy="50" r="34" fill="#1a0a2c" stroke="#a78bfa" strokeWidth="1.8" />
-      <path d="M50 16 A 34 34 0 0 1 50 84 Z" fill="url(#moonG)" />
+      <circle cx="50" cy="50" r="44" fill="url(#moonGlow2)" />
+      {/* dark side */}
+      <circle cx="50" cy="50" r="32" fill="url(#moonShade)" stroke="#a78bfa" strokeWidth="1.4" />
+      {/* lit side */}
+      <path d="M 50 18 A 32 32 0 0 1 50 82 Z" fill="url(#moonLit)" filter="url(#moonSoft)" />
+      {/* craters on lit side */}
+      <circle cx="62" cy="38" r="2.4" fill="#1e293b" opacity="0.35" />
+      <circle cx="68" cy="58" r="3" fill="#1e293b" opacity="0.3" />
+      <circle cx="58" cy="68" r="1.6" fill="#1e293b" opacity="0.35" />
+      {/* terminator highlight */}
+      <path d="M 50 18 A 32 32 0 0 1 50 82" stroke="#fff" strokeWidth="0.6" fill="none" opacity="0.55" />
+      {/* tiny star */}
+      <circle cx="22" cy="22" r="0.8" fill="#fff7d6" />
+      <circle cx="24" cy="26" r="0.4" fill="#fde68a" opacity="0.7" />
     </svg>
   )
 }
+
 function WaveIcon() {
   return (
     <svg viewBox="0 0 100 100" className="h-full w-full">
       <defs>
-        <linearGradient id="waveG" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#bae6fd" />
-          <stop offset="55%" stopColor="#0891b2" />
+        <linearGradient id="wvDeep" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#0891b2" />
           <stop offset="100%" stopColor="#083344" />
         </linearGradient>
+        <linearGradient id="wvMid" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#a7e6ff" />
+          <stop offset="80%" stopColor="#0e7490" />
+        </linearGradient>
+        <linearGradient id="wvCrest" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#f0f9ff" />
+          <stop offset="100%" stopColor="#bae6fd" />
+        </linearGradient>
+        <filter id="wvSoft">
+          <feGaussianBlur stdDeviation="0.4" />
+        </filter>
       </defs>
-      <path d="M4 70 C 18 32, 38 32, 56 56 C 64 68, 78 60, 96 52 L 96 96 L 4 96 Z"
-            fill="url(#waveG)" />
-      <path d="M8 76 C 24 56, 44 60, 60 70 C 76 80, 86 74, 94 70"
-            stroke="white" strokeWidth="1.8" fill="none" opacity="0.6" />
-      <path d="M22 50 C 30 44, 38 46, 44 52"
-            stroke="white" strokeWidth="1.2" fill="none" opacity="0.7" />
+      {/* deep water back */}
+      <path d="M0 78 C 14 60, 30 58, 50 70 C 70 82, 86 78, 100 72 L 100 100 L 0 100 Z"
+            fill="url(#wvDeep)" />
+      {/* big wave */}
+      <path
+        d="M2 64 C 18 28, 40 22, 58 50 C 66 64, 80 60, 100 52 L 100 88 C 80 76, 62 80, 50 72 C 36 64, 18 70, 2 78 Z"
+        fill="url(#wvMid)" filter="url(#wvSoft)"
+      />
+      {/* wave crest highlight */}
+      <path d="M6 62 C 22 30, 40 26, 56 50 C 60 56, 66 56, 74 52"
+            stroke="url(#wvCrest)" strokeWidth="2.5" fill="none" opacity="0.85" />
+      {/* foam streaks */}
+      <path d="M10 70 C 24 52, 42 56, 58 66 C 76 76, 88 72, 96 68"
+            stroke="white" strokeWidth="1.6" fill="none" opacity="0.7" />
+      <path d="M16 78 C 30 68, 48 72, 64 78"
+            stroke="white" strokeWidth="0.9" fill="none" opacity="0.55" />
+      {/* foam dots */}
+      <circle cx="22" cy="44" r="0.7" fill="white" opacity="0.7" />
+      <circle cx="34" cy="36" r="0.6" fill="white" opacity="0.7" />
+      <circle cx="68" cy="48" r="0.5" fill="white" opacity="0.6" />
     </svg>
   )
 }
@@ -601,25 +784,49 @@ function NotepadIcon() {
   return (
     <svg viewBox="0 0 100 100" className="h-full w-full">
       <defs>
-        <linearGradient id="padG" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#f0e2c5" />
-          <stop offset="100%" stopColor="#d4b884" />
+        <linearGradient id="padPaper" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#f4e8cb" />
+          <stop offset="100%" stopColor="#c9a777" />
         </linearGradient>
+        <linearGradient id="padBack" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#a07c30" />
+          <stop offset="100%" stopColor="#5a3a14" />
+        </linearGradient>
+        <linearGradient id="padHeader" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#f3deaa" />
+          <stop offset="100%" stopColor="#8b6914" />
+        </linearGradient>
+        <filter id="padSoft"><feGaussianBlur stdDeviation="0.3" /></filter>
       </defs>
-      <rect x="22" y="18" width="50" height="68" rx="2" fill="url(#padG)" stroke="#5a3a14" strokeWidth="1.6" />
-      <rect x="22" y="18" width="50" height="8" fill="#c9a14a" />
-      <circle cx="30" cy="22" r="1.4" fill="#3a2814" />
-      <circle cx="50" cy="22" r="1.4" fill="#3a2814" />
-      <circle cx="64" cy="22" r="1.4" fill="#3a2814" />
-      <line x1="28" y1="38" x2="64" y2="38" stroke="#5a3a14" strokeWidth="1" opacity="0.7" />
-      <line x1="28" y1="48" x2="64" y2="48" stroke="#5a3a14" strokeWidth="1" opacity="0.7" />
-      <line x1="28" y1="58" x2="64" y2="58" stroke="#5a3a14" strokeWidth="1" opacity="0.7" />
-      <line x1="28" y1="68" x2="54" y2="68" stroke="#5a3a14" strokeWidth="1" opacity="0.7" />
+      {/* shadow */}
+      <ellipse cx="50" cy="92" rx="28" ry="2" fill="#000" opacity="0.4" />
+      {/* notepad back board */}
+      <rect x="20" y="16" width="54" height="74" rx="3" fill="url(#padBack)" />
+      {/* paper sheet */}
+      <rect x="22" y="14" width="50" height="68" rx="2" fill="url(#padPaper)" stroke="#5a3a14" strokeWidth="1.2" filter="url(#padSoft)" />
+      {/* header band */}
+      <rect x="22" y="14" width="50" height="9" fill="url(#padHeader)" />
+      {/* binding holes */}
+      <circle cx="30" cy="18.5" r="1.5" fill="#1a0a04" />
+      <circle cx="47" cy="18.5" r="1.5" fill="#1a0a04" />
+      <circle cx="64" cy="18.5" r="1.5" fill="#1a0a04" />
+      {/* red margin line */}
+      <line x1="32" y1="26" x2="32" y2="78" stroke="#9b1c1c" strokeWidth="0.7" opacity="0.5" />
+      {/* ruled lines */}
+      {[36, 44, 52, 60, 68, 76].map((y) => (
+        <line key={y} x1="34" y1={y} x2="68" y2={y} stroke="#5a3a14" strokeWidth="0.8" opacity="0.65" />
+      ))}
+      {/* curled corner */}
+      <path d="M 68 78 L 72 82 L 64 82 Z" fill="#a07c30" opacity="0.6" />
       {/* pencil */}
-      <g transform="rotate(28 76 60)">
-        <rect x="73" y="38" width="5" height="38" fill="#9d7445" stroke="#3a2814" strokeWidth="0.5" />
-        <polygon points="73,38 78,38 75.5,32" fill="#3a2814" />
-        <rect x="73" y="74" width="5" height="3" fill="#ec4899" />
+      <g transform="rotate(32 80 62)">
+        <rect x="77" y="40" width="6" height="38" fill="#9d7445" stroke="#3a2814" strokeWidth="0.5" />
+        <polygon points="77,40 83,40 80,32" fill="#fde68a" stroke="#3a2814" strokeWidth="0.4" />
+        <polygon points="78,37 82,37 80,32" fill="#1a0a04" />
+        <rect x="77" y="78" width="6" height="4" fill="#ec4899" />
+        <rect x="77" y="82" width="6" height="1.5" fill="#8b6914" />
+        {/* shadow under pencil */}
+        <line x1="76" y1="80" x2="74" y2="82" stroke="#000" strokeWidth="0.4" opacity="0.5" />
       </g>
     </svg>
   )
@@ -628,24 +835,46 @@ function BoxIcon() {
   return (
     <svg viewBox="0 0 100 100" className="h-full w-full">
       <defs>
-        <linearGradient id="bxTop" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#8a8a8a" />
-          <stop offset="100%" stopColor="#4a4a4a" />
+        <linearGradient id="bxTopG" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#a3a3a3" />
+          <stop offset="100%" stopColor="#5a5a5a" />
         </linearGradient>
-        <linearGradient id="bxL" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%" stopColor="#6a6a6a" />
+        <linearGradient id="bxLG" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stopColor="#7a7a7a" />
           <stop offset="100%" stopColor="#3a3a3a" />
         </linearGradient>
-        <linearGradient id="bxR" x1="0" x2="1" y1="0" y2="0">
+        <linearGradient id="bxRG" x1="0" x2="1" y1="0" y2="0">
           <stop offset="0%" stopColor="#4a4a4a" />
-          <stop offset="100%" stopColor="#2a2a2a" />
+          <stop offset="100%" stopColor="#1a1a1a" />
+        </linearGradient>
+        <linearGradient id="bxStrap" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#f3deaa" />
+          <stop offset="50%" stopColor="#c9a14a" />
+          <stop offset="100%" stopColor="#5a3a14" />
         </linearGradient>
       </defs>
-      <polygon points="50,16 84,30 50,46 16,30" fill="url(#bxTop)" stroke="#1a0a04" strokeWidth="1.2" />
-      <polygon points="16,30 50,46 50,84 16,68" fill="url(#bxL)" stroke="#1a0a04" strokeWidth="1.2" />
-      <polygon points="84,30 50,46 50,84 84,68" fill="url(#bxR)" stroke="#1a0a04" strokeWidth="1.2" />
-      <line x1="20" y1="42" x2="50" y2="56" stroke="#1a0a04" strokeWidth="0.8" opacity="0.7" />
-      <line x1="80" y1="42" x2="50" y2="56" stroke="#1a0a04" strokeWidth="0.8" opacity="0.7" />
+      {/* shadow under box */}
+      <ellipse cx="50" cy="90" rx="34" ry="3" fill="#000" opacity="0.45" />
+      {/* top face */}
+      <polygon points="50,14 84,28 50,44 16,28" fill="url(#bxTopG)" stroke="#1a0a04" strokeWidth="1.4" />
+      {/* left face */}
+      <polygon points="16,28 50,44 50,84 16,68" fill="url(#bxLG)" stroke="#1a0a04" strokeWidth="1.4" />
+      {/* right face */}
+      <polygon points="84,28 50,44 50,84 84,68" fill="url(#bxRG)" stroke="#1a0a04" strokeWidth="1.4" />
+      {/* slats on each face */}
+      <line x1="20" y1="44" x2="50" y2="58" stroke="#1a0a04" strokeWidth="0.6" opacity="0.6" />
+      <line x1="80" y1="44" x2="50" y2="58" stroke="#1a0a04" strokeWidth="0.6" opacity="0.6" />
+      <line x1="24" y1="58" x2="50" y2="70" stroke="#1a0a04" strokeWidth="0.5" opacity="0.4" />
+      <line x1="76" y1="58" x2="50" y2="70" stroke="#1a0a04" strokeWidth="0.5" opacity="0.4" />
+      {/* top seam highlight */}
+      <line x1="50" y1="14" x2="50" y2="44" stroke="#fff" strokeWidth="0.5" opacity="0.3" />
+      {/* brass corner straps */}
+      <polygon points="50,44 53,44 50,46 47,44" fill="url(#bxStrap)" />
+      <rect x="14" y="26" width="6" height="3" fill="url(#bxStrap)" />
+      <rect x="80" y="26" width="6" height="3" fill="url(#bxStrap)" />
+      {/* stamp on left face */}
+      <rect x="22" y="50" width="14" height="8" rx="0.5" fill="none" stroke="#c9a14a" strokeWidth="0.5" opacity="0.6" />
+      <line x1="24" y1="54" x2="34" y2="54" stroke="#c9a14a" strokeWidth="0.5" opacity="0.6" />
     </svg>
   )
 }
