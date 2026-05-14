@@ -9,6 +9,7 @@ import {
 } from './tracks'
 import { sessions } from './sessions'
 import { countSessionsInWindow, loadHistory } from './history'
+import { MODALITIES, type Modality } from './modalities'
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
@@ -45,11 +46,16 @@ function sessionMeta(id: string) {
   }
 }
 
-export default function TracksView() {
+export default function TracksView({ modality }: { modality: Modality }) {
   const [active, setActive] = useState<ActiveTrackState | null>(() =>
     loadActive(),
   )
   const [openTrackId, setOpenTrackId] = useState<string | null>(null)
+  const filteredTracks = useMemo(
+    () => tracks.filter((t) => t.modality === modality),
+    [modality],
+  )
+  const modalityMeta = MODALITIES[modality]
 
   function startTrack(trackId: string) {
     const state: ActiveTrackState = {
@@ -127,22 +133,29 @@ export default function TracksView() {
     <section className="flex flex-col gap-3">
       <div className="flex items-baseline justify-between px-1">
         <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
-          Programs · {tracks.length}
+          {modalityMeta.name} programs · {filteredTracks.length}
         </h3>
         <span className="text-[11px] text-slate-400">long-form</span>
       </div>
-      <div className="grid grid-cols-1 gap-3">
-        {tracks.map((track) => (
-          <TrackCard
-            key={track.id}
-            track={track}
-            isOpen={openTrackId === track.id}
-            onClick={() =>
-              setOpenTrackId(openTrackId === track.id ? null : track.id)
-            }
-          />
-        ))}
-      </div>
+      {filteredTracks.length === 0 ? (
+        <div className="rounded-xl bg-slate-50 p-6 text-center text-sm text-slate-500">
+          No {modalityMeta.name.toLowerCase()} programs yet. A progressive
+          long-form track for this modality is on the way.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-3">
+          {filteredTracks.map((track) => (
+            <TrackCard
+              key={track.id}
+              track={track}
+              isOpen={openTrackId === track.id}
+              onClick={() =>
+                setOpenTrackId(openTrackId === track.id ? null : track.id)
+              }
+            />
+          ))}
+        </div>
+      )}
       {openTrack && (
         <TrackDetail
           track={openTrack}

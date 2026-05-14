@@ -1,26 +1,10 @@
 import type { Difficulty } from './catalog'
+import type { Modality } from './modalities'
 
-export type SessionFocus =
-  | 'Grounding'
-  | 'Stress Release'
-  | 'Anxiety Reset'
-  | 'Pre-Sleep'
-  | 'Hip Release'
-  | 'Heart Opening'
-  | 'Lower Back Relief'
-  | 'Tech Neck Reset'
-  | 'Morning Activation'
-  | 'Post-Workout Recovery'
-  | 'Hamstring Deep Stretch'
-  | 'Shoulder Mobility'
-  | 'Core Strength'
-  | 'Quick Reset'
-  | 'Deep Flexibility'
-  | 'Spinal Twists'
-  | 'Inversion Prep'
-  | 'Balance Flow'
-  | 'Breath Foundation'
-  | 'Full-Body Reset'
+// SessionFocus is open-ended — each modality contributes its own focuses
+// (e.g. "Kicks & Combos" for martial arts). Kept as a free-form string so
+// we don't have to update a union every time we add content.
+export type SessionFocus = string
 
 export type SessionStep = {
   poseId: string
@@ -40,9 +24,12 @@ export type Session = {
   gradient: string
   description: string
   steps: SessionStep[]
+  modality: Modality
 }
 
-export const sessions: Session[] = [
+// Yoga sessions inline below — modality omitted, stamped on in the merged
+// `sessions` export at the bottom of this file.
+const yogaSessions: Omit<Session, 'modality'>[] = [
   {
     id: 'grounding',
     name: 'Grounding',
@@ -487,4 +474,19 @@ export const sessions: Session[] = [
       { poseId: 'corpse', durationSec: 120 },
     ],
   },
+]
+
+import { danceSessions } from './dance-sessions'
+import { martialArtsSessions } from './martial-arts-sessions'
+import { strengthSessions } from './strength-sessions'
+import { breathSessions } from './breath-sessions'
+import { meditationSessions } from './meditation-sessions'
+
+export const sessions: Session[] = [
+  ...yogaSessions.map((s) => ({ ...s, modality: 'yoga' as const })),
+  ...danceSessions,
+  ...martialArtsSessions,
+  ...strengthSessions,
+  ...breathSessions,
+  ...meditationSessions,
 ]

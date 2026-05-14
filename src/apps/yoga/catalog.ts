@@ -1,13 +1,15 @@
-export type Difficulty = 'Beginner' | 'Intermediate' | 'Advanced'
+import type { CatalogEntry } from './catalog-types'
+import { danceCatalog } from './dance-catalog'
+import { martialArtsCatalog } from './martial-arts-catalog'
+import { strengthCatalog } from './strength-catalog'
+import { breathCatalog } from './breath-catalog'
+import { meditationCatalog } from './meditation-catalog'
 
-export type CatalogEntry = {
-  id: string
-  name: string
-  difficulty: Difficulty
-  benefits: string
-}
+export type { CatalogEntry, Difficulty } from './catalog-types'
 
-export const catalog: CatalogEntry[] = [
+// Yoga entries are declared without a modality field; the merged `catalog`
+// export below stamps `modality: 'yoga'` onto each one.
+const yogaEntries: Omit<CatalogEntry, 'modality'>[] = [
   // ─── Beginner ───────────────────────────────────────────────────────────
   { id: 'mountain', name: 'Mountain Pose', difficulty: 'Beginner', benefits: 'Improves posture and stability; foundation for standing positions.' },
   { id: 'standing-forward-fold', name: 'Standing Forward Fold', difficulty: 'Beginner', benefits: 'Stretches hamstrings, calves, and lower back.' },
@@ -139,4 +141,13 @@ export const catalog: CatalogEntry[] = [
   { id: 'press-handstand', name: 'Press to Handstand', difficulty: 'Advanced', benefits: 'Strength-based handstand entry; demands compression strength and balance.' },
   { id: 'lotus-headstand', name: 'Headstand with Crossed Legs', difficulty: 'Advanced', benefits: 'Inversion combined with deep hip rotation; tests inversion control.' },
   { id: 'wounded-peacock', name: 'Wounded Peacock', difficulty: 'Advanced', benefits: 'One-armed variation of Peacock; extreme wrist and shoulder strength.' },
+]
+
+export const catalog: CatalogEntry[] = [
+  ...yogaEntries.map((e) => ({ ...e, modality: 'yoga' as const })),
+  ...danceCatalog,
+  ...martialArtsCatalog,
+  ...strengthCatalog,
+  ...breathCatalog,
+  ...meditationCatalog,
 ]

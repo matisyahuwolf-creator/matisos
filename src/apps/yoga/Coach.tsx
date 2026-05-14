@@ -176,6 +176,7 @@ export default function Coach() {
       gradient: 'from-violet-500 via-purple-600 to-fuchsia-700',
       description: s.openingReassurance,
       steps,
+      modality: 'yoga',
     }
     setRunning(session)
   }

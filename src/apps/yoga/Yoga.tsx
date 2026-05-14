@@ -10,6 +10,7 @@ import Coach from './Coach'
 import SkillsView from './SkillsView'
 import FloatingChat from './FloatingChat'
 import { catalog, type Difficulty } from './catalog'
+import { MODALITY_LIST, MODALITIES, type Modality } from './modalities'
 
 type Status = 'library' | 'learning' | 'mastered'
 type FilterDifficulty = 'All' | Difficulty
@@ -30,6 +31,11 @@ type Pose = {
   imageUrl?: string
   isCustom: boolean
   createdAt: number
+  modality?: Modality
+}
+
+function modalityOf(pose: Pose): Modality {
+  return pose.modality ?? catalog.find((c) => c.id === pose.id)?.modality ?? 'yoga'
 }
 
 const KEY = 'yoga:state-v2'
@@ -112,6 +118,7 @@ export default function Yoga() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [librarySearch, setLibrarySearch] = useState('')
   const [filter, setFilter] = useState<FilterDifficulty>('All')
+  const [modality, setModality] = useState<Modality>('yoga')
 
   useEffect(() => {
     saveState(poses)
@@ -127,6 +134,7 @@ export default function Yoga() {
       notes: '',
       isCustom: true,
       createdAt: Date.now(),
+      modality,
     }
     setPoses((prev) => [pose, ...prev])
     setDraft('')
@@ -149,27 +157,27 @@ export default function Yoga() {
   const learning = useMemo(
     () =>
       poses
-        .filter((p) => p.status === 'learning')
+        .filter((p) => p.status === 'learning' && modalityOf(p) === modality)
         .sort((a, b) => difficultyRank(a) - difficultyRank(b)),
-    [poses],
+    [poses, modality],
   )
   const mastered = useMemo(
     () =>
       poses
-        .filter((p) => p.status === 'mastered')
+        .filter((p) => p.status === 'mastered' && modalityOf(p) === modality)
         .sort((a, b) => difficultyRank(a) - difficultyRank(b)),
-    [poses],
+    [poses, modality],
   )
   const library = useMemo(
     () =>
       poses
-        .filter((p) => p.status === 'library')
+        .filter((p) => p.status === 'library' && modalityOf(p) === modality)
         .sort((a, b) => {
           const d = difficultyRank(a) - difficultyRank(b)
           if (d !== 0) return d
           return a.name.localeCompare(b.name)
         }),
-    [poses],
+    [poses, modality],
   )
 
   const filteredLibrary = useMemo(() => {
@@ -187,9 +195,16 @@ export default function Yoga() {
   const filters: FilterDifficulty[] = ['All', 'Beginner', 'Intermediate', 'Advanced']
   const [tab, setTab] = useState<TabKey>('today')
 
+  const modalityScopedTab =
+    tab === 'library' || tab === 'sessions' || tab === 'programs'
+
   return (
     <div className="flex flex-col gap-5">
       <TabBar value={tab} onChange={setTab} />
+
+      {modalityScopedTab && (
+        <ModalityBar value={modality} onChange={setModality} />
+      )}
 
       {tab === 'today' && (
         <Today
@@ -206,9 +221,9 @@ export default function Yoga() {
 
       {tab === 'skills' && <SkillsView />}
 
-      {tab === 'programs' && <TracksView />}
+      {tab === 'programs' && <TracksView modality={modality} />}
 
-      {tab === 'sessions' && <SessionsView />}
+      {tab === 'sessions' && <SessionsView modality={modality} />}
 
       {tab === 'library' && (
         <div className="flex flex-col gap-6">
@@ -361,6 +376,42 @@ function TabBar({
           {t.label}
         </button>
       ))}
+    </div>
+  )
+}
+
+function ModalityBar({
+  value,
+  onChange,
+}: {
+  value: Modality
+  onChange: (m: Modality) => void
+}) {
+  const active = MODALITIES[value]
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+        {MODALITY_LIST.map((m) => {
+          const isActive = m.id === value
+          return (
+            <button
+              key={m.id}
+              onClick={() => onChange(m.id)}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold press transition ${
+                isActive
+                  ? `bg-gradient-to-br ${m.gradient} text-white shadow-[0_4px_12px_-4px_rgba(0,0,0,0.25)]`
+                  : 'bg-white text-slate-700 ring-1 ring-black/5 hover:bg-slate-50'
+              }`}
+            >
+              <span className="mr-1">{m.icon}</span>
+              {m.name}
+            </button>
+          )
+        })}
+      </div>
+      <p className="px-2 text-[11px] italic text-slate-500">
+        {active.tagline}
+      </p>
     </div>
   )
 }

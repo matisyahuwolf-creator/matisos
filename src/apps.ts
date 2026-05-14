@@ -38,13 +38,13 @@ export const apps: AppEntry[] = [
   {
     kind: 'internal',
     slug: 'yoga',
-    name: 'Yoga',
-    tagline: 'The app that gets me on the mat.',
+    name: 'Matis Fitness',
+    tagline: 'Six modalities. One daily flow.',
     description:
-      'A coach, a library of 126 poses, guided sessions, and an 18-month flexibility program. Built for one job: showing up.',
-    icon: '🧘',
+      'Yoga, dance, martial arts, strength, breath, meditation — chained into a single daily practice. Bodyweight only; built for one body in particular.',
+    icon: '🔥',
     status: 'live',
-    gradient: 'from-emerald-400 via-teal-500 to-cyan-600',
+    gradient: 'from-orange-500 via-rose-500 to-violet-600',
     category: 'Wellness',
     component: Yoga,
   },

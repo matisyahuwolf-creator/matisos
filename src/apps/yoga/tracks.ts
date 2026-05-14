@@ -14,6 +14,8 @@ export type TrackPhase = {
   weeklyMinutes: string
 }
 
+import type { Modality } from './modalities'
+
 export type Track = {
   id: string
   name: string
@@ -23,11 +25,13 @@ export type Track = {
   icon: string
   gradient: string
   phases: TrackPhase[]
+  modality: Modality
 }
 
 export const tracks: Track[] = [
   {
     id: 'full-flexibility',
+    modality: 'yoga',
     name: 'Full Flexibility',
     subtitle: '18 months · 78 weeks',
     description:
