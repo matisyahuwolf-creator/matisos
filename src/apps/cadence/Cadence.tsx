@@ -123,6 +123,42 @@ function saveJSON(key: string, value: unknown) {
   storage.set(key, JSON.stringify(value))
 }
 
+function normalizePlan(raw: unknown): Plan | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  const view: View = (['energy', 'timeline', 'narrative'] as const).includes(
+    r.view as View,
+  )
+    ? (r.view as View)
+    : 'timeline'
+  const summary =
+    r.summary && typeof r.summary === 'object'
+      ? {
+          title:
+            typeof (r.summary as Record<string, unknown>).title === 'string'
+              ? ((r.summary as Record<string, unknown>).title as string)
+              : '',
+          hint:
+            typeof (r.summary as Record<string, unknown>).hint === 'string'
+              ? ((r.summary as Record<string, unknown>).hint as string)
+              : '',
+        }
+      : { title: '', hint: '' }
+  return {
+    view,
+    headline: typeof r.headline === 'string' ? r.headline : '',
+    narrative: typeof r.narrative === 'string' ? r.narrative : '',
+    summary,
+    blocks: Array.isArray(r.blocks) ? (r.blocks as Block[]) : [],
+    suggestions: Array.isArray(r.suggestions)
+      ? (r.suggestions as unknown[]).filter(
+          (s): s is string => typeof s === 'string',
+        )
+      : [],
+    generatedAt: typeof r.generatedAt === 'number' ? r.generatedAt : Date.now(),
+  }
+}
+
 function fmtDateLong(d: Date): string {
   return d.toLocaleDateString(undefined, {
     weekday: 'long',
@@ -139,7 +175,7 @@ export default function Cadence() {
     loadJSON<Block[]>(KEYS.fixed, []),
   )
   const [plan, setPlan] = useState<Plan | null>(() =>
-    loadJSON<Plan | null>(KEYS.plan, null),
+    normalizePlan(loadJSON<unknown>(KEYS.plan, null)),
   )
   const [history, setHistory] = useState<Turn[]>(() =>
     loadJSON<Turn[]>(KEYS.history, []),
