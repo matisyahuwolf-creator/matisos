@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react'
+import Cadence from './apps/cadence/Cadence'
 import Hyrogliphics from './apps/hyrogliphics/Hyrogliphics'
 import Initiation from './apps/initiation/Initiation'
 import Pardes from './apps/pardes/Pardes'
@@ -72,6 +73,19 @@ export const apps: AppEntry[] = [
     gradient: 'from-amber-700 via-yellow-800 to-stone-900',
     category: 'Tools',
     component: Hyrogliphics,
+  },
+  {
+    kind: 'internal',
+    slug: 'cadence',
+    name: 'Cadence',
+    tagline: 'An AI shape for your day.',
+    description:
+      'A personal day-planner that picks how to render the answer — a full plan, an energy read, a priority cut, or a story.',
+    icon: '◑',
+    status: 'live',
+    gradient: 'from-indigo-600 via-violet-500 to-cyan-500',
+    category: 'Tools',
+    component: Cadence,
   },
   {
     kind: 'internal',
