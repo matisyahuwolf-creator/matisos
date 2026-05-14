@@ -2,86 +2,294 @@ import { useEffect, useState } from 'react'
 import ChatWidget from './ChatWidget'
 
 const SCOPED_STYLES = `
-  #susq-landing { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; color: #221d16; }
+  #susq-landing { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; color: #221d16; scroll-behavior: smooth; }
   #susq-landing .serif { font-family: 'Fraunces', Georgia, serif; font-feature-settings: "ss01" on, "ss02" on; }
   #susq-landing .text-balance { text-wrap: balance; }
   #susq-landing .text-pretty { text-wrap: pretty; }
 
+  /* parchment grain */
   #susq-landing .grain {
     background-image:
-      radial-gradient(circle at 25% 30%, rgba(74, 124, 140, 0.05) 0%, transparent 40%),
-      radial-gradient(circle at 75% 70%, rgba(122, 145, 98, 0.06) 0%, transparent 45%),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.13 0 0 0 0 0.11 0 0 0 0 0.08 0 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      radial-gradient(circle at 25% 30%, rgba(192, 140, 74, 0.05) 0%, transparent 40%),
+      radial-gradient(circle at 75% 70%, rgba(122, 145, 98, 0.05) 0%, transparent 45%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.13 0 0 0 0 0.11 0 0 0 0 0.08 0 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
-  #susq-landing .topo {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'%3E%3Cg fill='none' stroke='%234a7c8c' stroke-width='0.6' opacity='0.18'%3E%3Cpath d='M-50 200 Q100 140 250 200 T550 200 T850 200'/%3E%3Cpath d='M-50 240 Q120 180 280 240 T580 240 T880 240'/%3E%3Cpath d='M-50 280 Q140 220 300 280 T600 280 T900 280'/%3E%3Cpath d='M-50 320 Q160 260 320 320 T620 320 T920 320'/%3E%3Cpath d='M-50 360 Q180 300 340 360 T640 360 T940 360'/%3E%3Cpath d='M-50 400 Q200 340 360 400 T660 400 T960 400'/%3E%3Cpath d='M-50 440 Q220 380 380 440 T680 440 T980 440'/%3E%3C/g%3E%3C/svg%3E");
-    background-size: 600px 600px;
+  /* postcard look */
+  #susq-landing .postcard {
+    background: #f7f0dd;
+    border: 1px solid #d8c79b;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.4) inset,
+      0 20px 40px -20px rgba(122, 95, 58, 0.25),
+      0 2px 6px rgba(122, 95, 58, 0.08);
   }
 
+  /* deckled / torn paper edge (using inset shadow + clip) */
+  #susq-landing .deckle {
+    background: #f7f0dd;
+    border: 1px solid #d8c79b;
+    box-shadow:
+      0 14px 30px -20px rgba(122, 95, 58, 0.3),
+      0 2px 6px rgba(122, 95, 58, 0.08);
+  }
+
+  /* river wave divider */
+  #susq-landing .wave-divider svg { display: block; width: 100%; height: 100%; }
+
+  /* primary navy button */
+  #susq-landing .btn-navy {
+    background: #1b2f37;
+    color: #f5efe1;
+    transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    box-shadow: 0 6px 16px -8px rgba(27, 47, 55, 0.4);
+  }
+  #susq-landing .btn-navy:hover { background: #2e525e; transform: translateY(-1px); }
+
+  /* ochre / orange button */
+  #susq-landing .btn-ochre {
+    background: #c08c4a;
+    color: #f5efe1;
+    transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    box-shadow: 0 6px 16px -8px rgba(192, 140, 74, 0.4);
+  }
+  #susq-landing .btn-ochre:hover { background: #b07c3a; transform: translateY(-1px); }
+
+  #susq-landing .btn-ghost {
+    border: 1.5px solid rgba(34, 29, 22, 0.35);
+    color: #221d16;
+    transition: border-color 180ms ease, background 180ms ease;
+  }
+  #susq-landing .btn-ghost:hover { border-color: rgba(34, 29, 22, 0.7); background: rgba(34, 29, 22, 0.04); }
+
+  /* service / approach cards */
+  #susq-landing .feature-card {
+    background: #f3ead2;
+    border: 1px solid #d8c79b;
+    transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+  }
+  #susq-landing .feature-card:hover {
+    transform: translateY(-2px);
+    border-color: #c08c4a;
+    box-shadow: 0 16px 32px -16px rgba(122, 95, 58, 0.3);
+  }
+
+  /* link underline grow */
   #susq-landing .underline-grow {
     background-image: linear-gradient(currentColor, currentColor);
     background-size: 0% 1px;
     background-repeat: no-repeat;
     background-position: 0 100%;
-    transition: background-size 300ms ease;
+    transition: background-size 280ms ease;
   }
   #susq-landing .underline-grow:hover { background-size: 100% 1px; }
 
-  #susq-landing .wave-divider svg { display: block; width: 100%; height: 100%; }
-
-  @keyframes susq-drift { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-12px); } }
-  #susq-landing .drift { animation: susq-drift 12s ease-in-out infinite; }
-
-  @keyframes susq-flow-dash { to { stroke-dashoffset: -200; } }
-  #susq-landing .flow-line { stroke-dasharray: 6 10; animation: susq-flow-dash 8s linear infinite; }
-
-  #susq-landing .card {
-    background: rgba(255, 252, 244, 0.55);
-    backdrop-filter: blur(6px);
-    border: 1px solid rgba(74, 66, 51, 0.12);
-    transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease;
-  }
-  #susq-landing .card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(74, 124, 140, 0.4);
-    box-shadow: 0 18px 40px -20px rgba(46, 82, 94, 0.25);
-  }
-
-  #susq-landing .scenario {
-    background: #fffaee;
-    border: 1px solid #cdbf9f;
-    box-shadow: 0 24px 50px -28px rgba(46, 82, 94, 0.45);
-  }
-
-  #susq-landing .btn-primary {
-    background: linear-gradient(180deg, #3b6877, #2e525e);
-    color: #fffaee;
-    border: 1px solid #2e525e;
-    transition: transform 180ms ease, box-shadow 180ms ease;
-  }
-  #susq-landing .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 24px -12px rgba(46, 82, 94, 0.6); }
-
-  #susq-landing .btn-ghost {
-    border: 1px solid rgba(34, 29, 22, 0.25);
-    color: #221d16;
-    transition: border-color 180ms ease, background 180ms ease;
-  }
-  #susq-landing .btn-ghost:hover { border-color: rgba(34, 29, 22, 0.55); background: rgba(34, 29, 22, 0.04); }
-
+  /* soft pulse */
   @keyframes susq-soft-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
   #susq-landing .soft-pulse { animation: susq-soft-pulse 2s ease-in-out infinite; }
 
+  /* drift */
+  @keyframes susq-drift { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  #susq-landing .drift { animation: susq-drift 7s ease-in-out infinite; }
+
+  /* flowing dashed line for chat scenarios */
+  @keyframes susq-flow-dash { to { stroke-dashoffset: -200; } }
+  #susq-landing .flow-line { stroke-dasharray: 6 10; animation: susq-flow-dash 8s linear infinite; }
+
+  /* reveal on scroll */
   #susq-landing .reveal { opacity: 0; transform: translateY(14px); transition: opacity 800ms ease, transform 800ms ease; }
   #susq-landing .reveal.in { opacity: 1; transform: none; }
 
-  #susq-landing { scroll-behavior: smooth; }
-
+  /* bounce dots */
   @keyframes susq-bounce {
     0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
     40% { transform: translateY(-4px); opacity: 1; }
   }
+
+  /* stamp tilt */
+  #susq-landing .stamp { transform: rotate(8deg); }
 `
+
+const TRUST_LOGOS = [
+  { name: "Cooper's", sub: 'Seafood House', style: 'script' as const },
+  { name: 'Sette Luna', sub: 'Ristorante', style: 'caps' as const },
+  { name: 'Fireside', sub: 'Tavern', style: 'stack' as const },
+  { name: 'The Slovak', sub: 'Kitchen', style: 'caps' as const },
+  { name: 'River Commons', sub: 'Coffee · Eatery', style: 'caps' as const },
+  { name: 'The Abington', sub: 'Ale House', style: 'script' as const },
+]
+
+const SERVICES = [
+  {
+    title: 'Smart Conversations',
+    body: 'AI assistants that answer calls, texts, and messages like your best team member.',
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 14 h32 a2 2 0 0 1 2 2 v18 a2 2 0 0 1 -2 2 H22 l-8 6 v-6 H8 a2 2 0 0 1 -2 -2 V16 a2 2 0 0 1 2 -2 z" />
+        <line x1="15" y1="22" x2="33" y2="22" />
+        <line x1="15" y1="28" x2="27" y2="28" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Reservations & Scheduling',
+    body: 'More bookings. Fewer no-shows. Seamless scheduling across channels.',
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="8" y="12" width="32" height="28" rx="2" />
+        <line x1="8" y1="20" x2="40" y2="20" />
+        <line x1="16" y1="8" x2="16" y2="14" />
+        <line x1="32" y1="8" x2="32" y2="14" />
+        <circle cx="16" cy="28" r="1.2" fill="currentColor" />
+        <circle cx="24" cy="28" r="1.2" fill="currentColor" />
+        <circle cx="32" cy="28" r="1.2" fill="currentColor" />
+        <circle cx="16" cy="34" r="1.2" fill="currentColor" />
+        <circle cx="24" cy="34" r="1.2" fill="currentColor" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Insights & Reporting',
+    body: "Understand what's working and where to focus, with clear, actionable data.",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="10" y1="38" x2="40" y2="38" />
+        <rect x="13" y="28" width="5" height="10" />
+        <rect x="22" y="22" width="5" height="16" />
+        <rect x="31" y="16" width="5" height="22" />
+        <polyline points="13,24 22,18 31,12 40,8" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Marketing & Outreach',
+    body: 'Targeted messages that bring people in and keep them coming back.',
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10 28 V20 L34 12 V36 L10 28 Z" />
+        <path d="M14 28 v6 a2 2 0 0 0 2 2 h4 a2 2 0 0 0 2 -2 v-3" />
+        <path d="M37 18 q4 2 4 6 q0 4 -4 6" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Operations & Automation',
+    body: 'Save time on the busy work so your team can focus on what matters.',
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="24" cy="24" r="6" />
+        <path d="M24 8 v6 M24 34 v6 M8 24 h6 M34 24 h6 M12 12 l4 4 M32 32 l4 4 M36 12 l-4 4 M16 32 l-4 4" />
+      </svg>
+    ),
+  },
+]
+
+const APPROACH = [
+  {
+    num: '1',
+    name: 'Listen',
+    body: 'We start with real conversations and real understanding.',
+    icon: (
+      <svg viewBox="0 0 80 64" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round">
+        {/* chair on stones */}
+        <path d="M28 14 v22 h18 v-22 z" />
+        <line x1="28" y1="36" x2="28" y2="52" />
+        <line x1="46" y1="36" x2="46" y2="52" />
+        <line x1="28" y1="42" x2="46" y2="42" />
+        <ellipse cx="40" cy="58" rx="22" ry="3" />
+        <path d="M14 56 q4 -4 8 0" />
+        <path d="M58 56 q4 -4 8 0" />
+        {/* clouds */}
+        <path d="M8 18 q3 -4 7 -2 q3 -3 7 0 q3 -1 4 2" />
+      </svg>
+    ),
+  },
+  {
+    num: '2',
+    name: 'Build',
+    body: 'We design and build solutions that fit your business.',
+    icon: (
+      <svg viewBox="0 0 80 64" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round">
+        {/* easel + canvas */}
+        <line x1="20" y1="56" x2="32" y2="14" />
+        <line x1="60" y1="56" x2="48" y2="14" />
+        <line x1="40" y1="14" x2="40" y2="56" />
+        <rect x="26" y="18" width="28" height="22" />
+        <line x1="32" y1="28" x2="46" y2="22" />
+        <line x1="32" y1="34" x2="40" y2="30" />
+        {/* paintbrush */}
+        <line x1="62" y1="20" x2="68" y2="14" />
+        <path d="M68 14 l3 -3 l2 2 l-3 3 z" />
+      </svg>
+    ),
+  },
+  {
+    num: '3',
+    name: 'Tend',
+    body: 'We stay close, refine, and grow with you for the long haul.',
+    icon: (
+      <svg viewBox="0 0 80 64" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round">
+        {/* watering can */}
+        <path d="M24 28 h22 v18 q0 4 -4 4 h-14 q-4 0 -4 -4 v-18 z" />
+        <path d="M46 32 l8 -4 l2 4" />
+        <path d="M24 24 h22 v4 h-22 z" />
+        <line x1="30" y1="24" x2="30" y2="20" />
+        <line x1="40" y1="24" x2="40" y2="20" />
+        {/* drops */}
+        <circle cx="60" cy="38" r="1" />
+        <circle cx="64" cy="44" r="1" />
+        <circle cx="58" cy="48" r="1" />
+        {/* sprout */}
+        <path d="M14 52 q2 -8 6 -8 q-2 -4 -6 -2" />
+      </svg>
+    ),
+  },
+]
+
+const ERAS = [
+  {
+    range: '2005–2012',
+    title: 'The Idea',
+    body: 'Conversations on riverbanks and in kitchen corners.',
+  },
+  {
+    range: '2013–2016',
+    title: 'Listening First',
+    body: 'We listened to local businesses and learned what really matters.',
+  },
+  {
+    range: '2017–2020',
+    title: 'Early Currents',
+    body: 'Pilots, partnerships, and proof of what AI could do here.',
+  },
+  {
+    range: '2021–2023',
+    title: 'Building the Current',
+    body: 'A platform shaped for real work in real places across NEPA.',
+  },
+  {
+    range: '2024–Today',
+    title: 'Stronger Together',
+    body: 'Expanding our reach, our team, and our impact — together.',
+  },
+]
+
+const STATS = [
+  { value: '100%', label: 'NEPA Focused' },
+  { value: '50+', label: 'Local Businesses Supported' },
+  { value: '1,000+', label: 'Hours Saved for Our Clients' },
+  { value: '98%', label: 'Client Satisfaction' },
+]
+
+const CHARTER_BENEFITS = [
+  'Locked-in founding pricing',
+  'Influence on roadmap & features',
+  'Priority support & early access',
+  'Co-marketing & local spotlight',
+]
+
+const CHARTER_CLAIMED = 1
+const CHARTER_TOTAL = 10
 
 export default function Landing({ onClose }: { onClose: () => void }) {
   const [submitted, setSubmitted] = useState(false)
@@ -107,13 +315,12 @@ export default function Landing({ onClose }: { onClose: () => void }) {
           }
         })
       },
-      { threshold: 0.12 }
+      { threshold: 0.12 },
     )
     root.querySelectorAll('.reveal').forEach((el) => io.observe(el))
     return () => io.disconnect()
   }, [])
 
-  // lock body scroll while overlay is open
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -130,14 +337,14 @@ export default function Landing({ onClose }: { onClose: () => void }) {
     >
       <style>{SCOPED_STYLES}</style>
 
-      {/* ambient backdrop */}
+      {/* parchment grain backdrop */}
       <div className="grain pointer-events-none fixed inset-0 -z-10" />
 
-      {/* close button (floating, top-left) */}
+      {/* close → back to matisOS */}
       <button
         onClick={onClose}
-        className="fixed left-4 top-4 z-[60] inline-flex items-center gap-1.5 rounded-full bg-[#1b2f37]/90 px-4 py-2 text-[13px] font-medium text-[#f5efe1] backdrop-blur-sm transition hover:bg-[#1b2f37]"
         aria-label="Back to matisOS"
+        className="fixed left-4 top-4 z-[60] inline-flex items-center gap-1.5 rounded-full bg-[#1b2f37]/90 px-4 py-2 text-[13px] font-medium text-[#f5efe1] backdrop-blur-sm transition hover:bg-[#1b2f37]"
       >
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M10 13L5 8l5-5" />
@@ -145,638 +352,373 @@ export default function Landing({ onClose }: { onClose: () => void }) {
         matisOS
       </button>
 
-      {/* nav */}
-      <header className="relative z-20">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
-          <a href="#susq-top" className="group flex items-center gap-3">
-            <svg viewBox="0 0 40 40" className="h-9 w-9" aria-hidden>
-              <path d="M3 22 Q10 14 18 20 T36 18" fill="none" stroke="#3b6877" strokeWidth="2.4" strokeLinecap="round" />
-              <path d="M3 28 Q11 22 19 26 T36 24" fill="none" stroke="#7a9162" strokeWidth="2.4" strokeLinecap="round" opacity="0.85" />
-            </svg>
-            <span className="serif text-xl font-medium tracking-tight text-[#221d16]">Susquehanna</span>
+      {/* ============ NAV ============ */}
+      <header className="relative z-30">
+        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 pt-7 pb-4 md:pt-9">
+          <a href="#susq-top" className="block">
+            <div className="serif text-[26px] font-medium leading-none tracking-[0.04em] text-[#1b2f37] md:text-[30px]">
+              SUSQUEHANNA
+            </div>
+            <div className="mt-1 text-[10px] font-medium uppercase tracking-[0.28em] text-[#75694d]">
+              AI for Northeast Pennsylvania
+            </div>
           </a>
-          <div className="hidden items-center gap-9 text-sm text-[#3b3528] md:flex">
+
+          <div className="hidden items-center gap-8 text-[13.5px] font-medium text-[#3b3528] lg:flex">
             <a href="#susq-services" className="underline-grow">Services</a>
-            <a href="#susq-approach" className="underline-grow">Approach</a>
-            <a href="#susq-local" className="underline-grow">Local</a>
-            <a href="#susq-contact" className="underline-grow">Contact</a>
+            <a href="#susq-restaurants" className="underline-grow">For Restaurants</a>
+            <a href="#susq-story" className="underline-grow">Our Story</a>
+            <a href="#susq-charter" className="underline-grow">Charter Membership</a>
+            <a href="#susq-services" className="underline-grow">Resources</a>
           </div>
-          <a href="#susq-contact" className="btn-primary rounded-full px-4 py-2 text-sm font-medium">
-            Start a conversation
+
+          <a href="#susq-contact" className="btn-ochre rounded-full px-5 py-2.5 text-[13.5px] font-medium">
+            Contact Us
           </a>
         </nav>
       </header>
 
-      {/* hero */}
-      <section id="susq-top" className="relative z-10">
-        <div className="topo absolute inset-0 -z-10 opacity-90" />
-
-        <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-10 px-6 pb-28 pt-20 md:grid-cols-12 md:pb-40 md:pt-28">
-          <div className="md:col-span-7">
-            <div className="mb-7 flex items-center gap-3">
-              <span className="soft-pulse h-1.5 w-1.5 rounded-full bg-[#5f7549]" />
-              <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#4a4233]">
+      {/* ============ HERO ============ */}
+      <section id="susq-top" className="relative z-10 overflow-hidden">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-12 px-6 pt-10 pb-20 md:grid-cols-12 md:gap-10 md:pt-14 md:pb-32">
+          <div className="md:col-span-6">
+            <div className="mb-6 flex items-center gap-2.5">
+              <svg viewBox="0 0 40 12" className="h-3 w-10 text-[#4a7c8c]" aria-hidden>
+                <path d="M0 6 Q8 1 16 6 T32 6" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                <path d="M2 9 Q10 5 18 9 T34 9" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.7" />
+              </svg>
+              <span className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#75694d]">
                 From the banks of the Susquehanna
               </span>
             </div>
 
-            <h1 className="serif text-balance text-5xl font-medium leading-[1.02] tracking-tight text-[#221d16] sm:text-6xl md:text-7xl">
-              AI that flows<br />
-              with the work<br />
-              <em className="not-italic text-[#3b6877]" style={{ fontStyle: 'italic' }}>already here.</em>
+            <h1 className="serif text-balance text-[44px] font-medium leading-[1.03] tracking-tight text-[#1b2f37] sm:text-[52px] md:text-[64px]">
+              AI that <em className="not-italic text-[#3b6877]" style={{ fontStyle: 'italic', fontWeight: 400 }}>flows</em>{' '}
+              with the work already here.
             </h1>
 
-            <p className="text-pretty mt-8 max-w-xl text-lg leading-relaxed text-[#3b3528] md:text-xl">
-              Susquehanna is building an infrastructure of growth for the small businesses of Northeastern Pennsylvania &mdash; putting frontier AI in the hands of the dental offices, auto shops, salons, restaurants, and family practices that hold this region together. One business at a time, until the whole region is moving forward.
+            <p className="text-pretty mt-6 max-w-lg text-[16.5px] leading-relaxed text-[#3b3528] md:text-[17.5px]">
+              Practical, people-first AI that helps NEPA businesses save time, serve better, and grow without losing what makes them local.
             </p>
 
-            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <button
-                onClick={openDemo}
-                className="group inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 font-medium text-[#221d16] transition"
-                style={{ background: 'linear-gradient(135deg, #f0e9d8 0%, #cddbe0 50%, #a8b888 100%)', boxShadow: '0 8px 20px -10px rgba(58,104,119,0.4)' }}
-              >
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3b6877] opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[#3b6877]" />
+            <div className="mt-9 flex flex-wrap items-center gap-3">
+              <a href="#susq-services" className="btn-navy inline-flex items-center justify-center rounded-full px-7 py-3.5 text-[14.5px] font-medium">
+                Explore Services
+              </a>
+              <button onClick={openDemo} className="btn-ghost inline-flex items-center gap-2 rounded-full px-5 py-3.5 text-[14.5px] font-medium">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1b2f37] text-[#f5efe1]">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                 </span>
-                Try a live demo
-                <svg className="h-4 w-4 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
+                See How It Works
               </button>
-              <a href="#susq-contact" className="btn-primary inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 font-medium">
-                Start a conversation
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
-              </a>
-              <a href="#susq-services" className="btn-ghost inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 font-medium">
-                See what we build
-              </a>
             </div>
-            <p className="mt-3 text-sm text-[#75694d]">
-              <span className="serif italic">Live demo</span> is the actual AI we'd put on your site — try asking it anything.
-            </p>
           </div>
 
-          {/* scenario card */}
-          <div className="md:col-span-5 md:pt-6">
-            <div className="scenario drift rounded-2xl p-6 md:p-7">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#75694d]">A Friday, dinner rush</span>
-                <span className="font-mono text-[11px] text-[#75694d]">7:18 PM</span>
-              </div>
-              <div className="mt-5 flex items-start gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#8aaab5] bg-[#cddbe0]">
-                  <svg className="h-4 w-4 text-[#3b6877]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
-                </div>
-                <p className="serif text-lg leading-snug text-[#221d16]">
-                  The phone rings &mdash; a table of four for 8:30. The hostess is in the weeds.
-                </p>
-              </div>
-
-              <svg viewBox="0 0 300 30" className="my-5 w-full text-[#4a7c8c]" preserveAspectRatio="none">
-                <path d="M0 15 Q40 5 80 15 T160 15 T240 15 T320 15" fill="none" stroke="currentColor" strokeWidth="1.5" className="flow-line" />
-              </svg>
-
-              <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#7a9162] bg-[#a8b888]/40">
-                  <svg className="h-4 w-4 text-[#465938]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                </div>
-                <p className="serif text-lg leading-snug text-[#221d16]">
-                  Twelve seconds later, the reservation is on the books and a confirmation text is on its way.
-                </p>
-              </div>
-
-              <div className="mt-6 flex items-center justify-between border-t border-[#cdbf9f]/60 pt-5">
-                <span className="text-xs text-[#75694d]">No one stops cooking.</span>
-                <span className="text-xs font-medium text-[#3b6877]">Table filled.</span>
-              </div>
-            </div>
+          {/* hero illustration card */}
+          <div className="md:col-span-6">
+            <HeroIllustration />
           </div>
         </div>
 
-        {/* river wave divider */}
+        {/* river divider */}
         <div className="wave-divider -mb-1 leading-none">
-          <svg viewBox="0 0 1440 90" preserveAspectRatio="none" className="h-[80px] w-full">
-            <path d="M0 60 Q180 20 360 50 T720 50 T1080 50 T1440 40 L1440 90 L0 90 Z" fill="#ede4d0" />
-            <path d="M0 70 Q180 40 360 60 T720 58 T1080 62 T1440 55" fill="none" stroke="#4a7c8c" strokeWidth="1.2" opacity="0.35" />
-            <path d="M0 75 Q180 50 360 68 T720 66 T1080 70 T1440 63" fill="none" stroke="#7a9162" strokeWidth="1" opacity="0.3" />
+          <svg viewBox="0 0 1440 80" preserveAspectRatio="none" className="h-[70px] w-full" aria-hidden>
+            <path d="M0 50 Q180 18 360 42 T720 42 T1080 42 T1440 36 L1440 80 L0 80 Z" fill="#cddbe0" opacity="0.5" />
+            <path d="M0 60 Q180 30 360 52 T720 50 T1080 54 T1440 48 L1440 80 L0 80 Z" fill="#8aaab5" opacity="0.45" />
+            <path d="M0 68 Q180 42 360 60 T720 58 T1080 62 T1440 56 L1440 80 L0 80 Z" fill="#3b6877" opacity="0.65" />
           </svg>
         </div>
       </section>
 
-      {/* trust strip */}
-      <section className="relative z-10 border-y border-[#cdbf9f]/40 bg-[#ede4d0]">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 px-6 py-7 md:flex-row">
-          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#4a4233]">Built for small businesses across NEPA</p>
-          <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-2 text-[#3b3528]">
-            <span className="serif text-base">Restaurants</span>
-            <span className="text-[#a89b78]">&bull;</span>
-            <span className="serif text-base">Dental practices</span>
-            <span className="text-[#a89b78]">&bull;</span>
-            <span className="serif text-base">Medical offices</span>
-            <span className="text-[#a89b78]">&bull;</span>
-            <span className="serif text-base">Auto shops</span>
-            <span className="text-[#a89b78]">&bull;</span>
-            <span className="serif text-base">Salons &amp; spas</span>
-          </div>
-        </div>
-      </section>
-
-      {/* local / mission */}
-      <section id="susq-local" className="relative z-10">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 py-28 md:grid-cols-12 md:py-36">
-          <div className="reveal md:col-span-6">
-            <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-[#5f7549]">A regional mission</p>
-            <h2 className="serif text-balance text-4xl font-medium leading-[1.05] tracking-tight text-[#221d16] md:text-5xl">
-              The river built this region.<br />
-              <span className="text-[#3b6877]">We're building its next economy.</span>
-            </h2>
-            <p className="text-pretty mt-7 text-lg leading-relaxed text-[#3b3528]">
-              Northeastern PA powered the country with coal, textiles, and rail. The factories thinned, the trains slowed, and the storefronts you grew up with started turning over. The opportunity in front of us now is just as big &mdash; and this time we don't have to ship it out of state to capture it.
-            </p>
-            <p className="text-pretty mt-4 text-lg leading-relaxed text-[#3b3528]">
-              Susquehanna is building the AI infrastructure underneath the next wave of NEPA small business. Each shop we work with gets smarter, faster, harder to compete with from outside the region. Multiply that across hundreds of local businesses and you don't have a vendor &mdash; you have a regional engine.
-            </p>
-            <p className="text-pretty mt-4 text-lg leading-relaxed text-[#3b3528]">
-              That's the work. Empower every small business here, one at a time, until the whole region is moving forward together.
-            </p>
-          </div>
-
-          <div className="reveal md:col-span-6">
-            <div className="relative aspect-[5/4] overflow-hidden rounded-2xl border border-[#cdbf9f] shadow-lg">
-              <svg viewBox="0 0 500 400" className="absolute inset-0 h-full w-full" preserveAspectRatio="xMidYMid slice">
-                <defs>
-                  <linearGradient id="susq-sky" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#e9d8b3" />
-                    <stop offset="60%" stopColor="#f0e9d8" />
-                    <stop offset="100%" stopColor="#cddbe0" />
-                  </linearGradient>
-                  <linearGradient id="susq-water" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#8aaab5" />
-                    <stop offset="100%" stopColor="#3b6877" />
-                  </linearGradient>
-                </defs>
-                <rect width="500" height="400" fill="url(#susq-sky)" />
-                <path d="M0 230 L60 200 L120 220 L180 195 L240 215 L300 198 L360 218 L420 200 L500 215 L500 280 L0 280 Z" fill="#465938" opacity="0.55" />
-                <path d="M0 250 L70 225 L140 245 L220 220 L290 240 L360 225 L440 245 L500 235 L500 300 L0 300 Z" fill="#5f7549" opacity="0.7" />
-                <path d="M0 280 L40 260 L80 275 L120 258 L160 272 L200 260 L240 274 L280 262 L320 273 L360 260 L400 272 L440 261 L480 274 L500 268 L500 320 L0 320 Z" fill="#465938" />
-                <path d="M0 340 Q120 305 250 325 T500 320 L500 400 L0 400 Z" fill="url(#susq-water)" />
-                <path d="M40 350 Q140 335 250 345 T480 345" fill="none" stroke="#cddbe0" strokeWidth="1" opacity="0.6" />
-                <path d="M30 365 Q150 350 260 360 T490 360" fill="none" stroke="#cddbe0" strokeWidth="1" opacity="0.4" />
-                <circle cx="370" cy="120" r="36" fill="#c89761" opacity="0.55" />
-                <circle cx="370" cy="120" r="22" fill="#c89761" opacity="0.7" />
-              </svg>
-              <div className="absolute bottom-4 left-5 right-5 flex items-center justify-between text-[11px] uppercase tracking-[0.18em]">
-                <span className="rounded bg-[#221d16]/30 px-2.5 py-1 text-[#f5efe1]/90 backdrop-blur-sm">The Endless Mountains</span>
-                <span className="rounded bg-[#221d16]/30 px-2.5 py-1 text-[#f5efe1]/90 backdrop-blur-sm">NEPA, 2026</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* history timeline — what NEPA built before, what we build now */}
-      <section id="susq-history" className="relative z-10 overflow-hidden">
-        <div className="topo absolute inset-0 -z-10 opacity-60" />
-        <div className="mx-auto max-w-7xl px-6 py-28 md:py-36">
-          <div className="reveal mx-auto max-w-3xl text-center">
-            <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-[#5f7549]">An unbroken thread</p>
-            <h2 className="serif text-balance text-4xl font-medium leading-[1.05] tracking-tight text-[#221d16] md:text-5xl">
-              Every era of this region<br />was built <span className="text-[#3b6877]">by the people who lived in it.</span>
-            </h2>
-            <p className="text-pretty mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-[#3b3528]">
-              Along the Susquehanna, every generation has had its infrastructure. Canals to move coal. Rails to move steel. Switchboards, then highways, then fiber. We're standing on the same banks, picking up the same job: build the rails that the next century of NEPA business runs on.
-            </p>
-          </div>
-
-          {/* the river of time */}
-          <div className="reveal relative mt-20">
-            {/* horizontal flowing line — desktop */}
-            <svg viewBox="0 0 1200 80" className="absolute left-0 right-0 top-12 hidden h-20 w-full md:block" preserveAspectRatio="none" aria-hidden>
-              <path d="M0 40 Q150 10 300 40 T600 40 T900 40 T1200 40" fill="none" stroke="#4a7c8c" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
-              <path d="M0 50 Q150 25 300 50 T600 50 T900 50 T1200 50" fill="none" stroke="#7a9162" strokeWidth="1.5" strokeLinecap="round" opacity="0.3" />
-            </svg>
-
-            <div className="grid grid-cols-1 gap-12 md:grid-cols-5 md:gap-4">
-              {[
-                {
-                  era: '1830s',
-                  title: 'The canals',
-                  body: 'The Delaware & Hudson, the North Branch — anthracite floated south. The first regional infrastructure.',
-                  icon: (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <path d="M3 14 Q6 11 9 14 T15 14 T21 14" />
-                      <path d="M5 17 L7 14 L17 14 L19 17 Z" />
-                      <line x1="9" y1="14" x2="9" y2="8" />
-                      <path d="M9 8 L13 11 L9 11 Z" />
-                    </svg>
-                  ),
-                },
-                {
-                  era: '1880s',
-                  title: 'Anthracite',
-                  body: 'Scranton, Wilkes-Barre, Hazleton — the hard coal that powered the country was dug right here.',
-                  icon: (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <path d="M4 18 L8 10 L14 8 L20 14 L18 19 L6 20 Z" />
-                      <path d="M9 13 L13 12" />
-                    </svg>
-                  ),
-                },
-                {
-                  era: '1920s',
-                  title: 'The railroads',
-                  body: 'The DL&W, the Lehigh Valley, Steamtown. Tracks meant access — to markets, to opportunity, to the world.',
-                  icon: (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <rect x="5" y="6" width="14" height="10" rx="1.5" />
-                      <circle cx="9" cy="18" r="1.5" />
-                      <circle cx="15" cy="18" r="1.5" />
-                      <line x1="3" y1="20" x2="21" y2="20" />
-                      <line x1="9" y1="9" x2="15" y2="9" />
-                    </svg>
-                  ),
-                },
-                {
-                  era: '1950s',
-                  title: 'Manufacturing',
-                  body: 'Textile mills, silk factories, steel finishing. Main Streets were full because the work was here.',
-                  icon: (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <path d="M3 20 L3 12 L9 14 L9 10 L15 12 L15 8 L21 10 L21 20 Z" />
-                      <line x1="6" y1="20" x2="6" y2="16" />
-                      <line x1="12" y1="20" x2="12" y2="16" />
-                      <line x1="18" y1="20" x2="18" y2="16" />
-                    </svg>
-                  ),
-                },
-                {
-                  era: '2026',
-                  title: 'AI infrastructure',
-                  body: 'The work of this generation. Built here, owned here, lifting every Main Street together.',
-                  icon: (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <circle cx="12" cy="12" r="2" />
-                      <circle cx="4" cy="6" r="1.5" />
-                      <circle cx="20" cy="6" r="1.5" />
-                      <circle cx="4" cy="18" r="1.5" />
-                      <circle cx="20" cy="18" r="1.5" />
-                      <line x1="6" y1="7" x2="10.5" y2="11" />
-                      <line x1="18" y1="7" x2="13.5" y2="11" />
-                      <line x1="6" y1="17" x2="10.5" y2="13" />
-                      <line x1="18" y1="17" x2="13.5" y2="13" />
-                    </svg>
-                  ),
-                  current: true,
-                },
-              ].map((node) => (
-                <div key={node.era} className="relative flex flex-col items-center text-center">
-                  <div
-                    className={`relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-2 ${
-                      node.current
-                        ? 'border-[#3b6877] bg-[#1b2f37] text-[#cddbe0] shadow-[0_10px_24px_-8px_rgba(46,82,94,0.6)]'
-                        : 'border-[#cdbf9f] bg-[#fffaee] text-[#465938]'
-                    }`}
-                  >
-                    {node.current && (
-                      <span className="absolute inset-0 animate-ping rounded-full bg-[#3b6877] opacity-25" />
-                    )}
-                    <div className="relative h-7 w-7">{node.icon}</div>
-                  </div>
-                  <div
-                    className={`mt-4 font-mono text-[12px] uppercase tracking-[0.18em] ${
-                      node.current ? 'text-[#3b6877]' : 'text-[#75694d]'
-                    }`}
-                  >
-                    {node.era}
-                  </div>
-                  <div className="serif mt-1 text-xl text-[#221d16]">{node.title}</div>
-                  <p className="mt-2 max-w-[200px] text-sm leading-relaxed text-[#3b3528]">{node.body}</p>
-                  {node.current && (
-                    <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#a8b888]/30 px-3 py-1 text-[10.5px] font-medium uppercase tracking-[0.18em] text-[#465938]">
-                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#5f7549]" />
-                      You are here
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="reveal mt-20 text-center">
-            <p className="serif mx-auto max-w-3xl text-balance text-2xl italic leading-[1.35] text-[#3b6877] md:text-3xl">
-              "We don't see ourselves as a company. We see ourselves as the next link in a 200-year chain — built by people who chose to stay."
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* services */}
-      <section id="susq-services" className="relative z-10 border-y border-[#cdbf9f]/40 bg-[#ede4d0]">
-        <div className="mx-auto max-w-7xl px-6 py-28 md:py-36">
-          <div className="grid grid-cols-1 items-end gap-10 md:grid-cols-12">
-            <div className="reveal md:col-span-7">
-              <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-[#3b6877]">01 &mdash; What we build</p>
-              <h2 className="serif text-balance text-4xl font-medium leading-[1.05] tracking-tight text-[#221d16] md:text-5xl">
-                Two things, done<br />quietly and well.
-              </h2>
-            </div>
-            <p className="reveal leading-relaxed text-[#3b3528] md:col-span-5">
-              We don't sell &ldquo;AI transformation.&rdquo; We build specific tools that take work off your team's plate, answer your customers when you can't, and pay for themselves within months.
-            </p>
-          </div>
-
-          <div className="mt-16 grid grid-cols-1 gap-5 md:grid-cols-2">
-            {/* service 1 */}
-            <div className="reveal card rounded-2xl p-8 md:p-10">
-              <div className="mb-6 flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#7a9162]/60 bg-[#a8b888]/30">
-                  <svg className="h-5 w-5 text-[#465938]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2v3M12 19v3M5 12H2M22 12h-3M19.07 4.93l-2.12 2.12M7.05 16.95l-2.12 2.12M19.07 19.07l-2.12-2.12M7.05 7.05L4.93 4.93" />
-                    <circle cx="12" cy="12" r="4" />
-                  </svg>
-                </div>
-                <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#75694d]">Service / 01</span>
-              </div>
-              <h3 className="serif text-3xl leading-tight text-[#221d16]">Quiet automation</h3>
-              <p className="mt-3 leading-relaxed text-[#3b3528]">
-                The behind-the-counter work eating up your team's days &mdash; inquiries, scheduling, data entry, email triage, invoices, follow-ups. We connect the tools you already use and let AI handle the in-between.
-              </p>
-              <ul className="mt-7 space-y-3 text-[#3b3528]">
-                {[
-                  'Voicemails, emails, and inquiries captured automatically — no copy-paste',
-                  'Invoices, intake forms, and PDFs sorted into the right place',
-                  'Customer follow-ups that just happen, on schedule',
-                  "Last week's numbers compiled and waiting in your inbox Monday morning",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <span className="mt-2 inline-block h-px w-3 bg-[#5f7549]" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* service 2 */}
-            <div className="reveal card rounded-2xl p-8 md:p-10">
-              <div className="mb-6 flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#8aaab5] bg-[#cddbe0]">
-                  <svg className="h-5 w-5 text-[#3b6877]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                </div>
-                <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#75694d]">Service / 02</span>
-              </div>
-              <h3 className="serif text-3xl leading-tight text-[#221d16]">Never miss a call</h3>
-              <p className="mt-3 leading-relaxed text-[#3b3528]">
-                AI assistants that actually know your business &mdash; your hours, services, the way you talk to customers. Answering on your website, by SMS, or over the phone. Stepping aside the moment a real person should take over.
-              </p>
-              <ul className="mt-7 space-y-3 text-[#3b3528]">
-                {[
-                  "A voice agent that picks up the main line when no one's free to answer",
-                  'Website chat that answers customer questions and books appointments',
-                  "SMS that captures inquiries 24/7, even when you're closed",
-                  'Friendly follow-ups that bring customers back through the door',
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <span className="mt-2 inline-block h-px w-3 bg-[#3b6877]" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* manifesto pull-quote */}
-      <section className="relative z-10">
-        <div className="reveal mx-auto max-w-4xl px-6 py-24 text-center md:py-32">
-          <svg viewBox="0 0 200 20" className="mx-auto mb-8 w-32 text-[#4a7c8c]" aria-hidden>
-            <path d="M0 10 Q25 2 50 10 T100 10 T150 10 T200 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-          <p className="serif text-balance text-2xl leading-[1.25] text-[#221d16] md:text-4xl">
-            We're not selling AI to Northeastern PA. We're building <span className="italic text-[#3b6877]">NEPA's AI infrastructure</span> &mdash; one local business at a time, until the whole region is competing on a different level.
+      {/* ============ TRUST STRIP ============ */}
+      <section className="relative z-10 bg-[#f3ead2]/60">
+        <div className="mx-auto max-w-7xl px-6 py-10 md:py-12">
+          <p className="mb-6 text-center text-[10.5px] font-semibold uppercase tracking-[0.28em] text-[#75694d]">
+            Trusted by businesses across Northeast Pennsylvania
           </p>
-          <p className="mt-8 text-[11px] font-medium uppercase tracking-[0.22em] text-[#4a4233]">The Susquehanna mission</p>
-        </div>
-      </section>
-
-      {/* approach */}
-      <section id="susq-approach" className="relative z-10">
-        <div className="mx-auto max-w-7xl px-6 py-28 md:py-36">
-          <div className="reveal max-w-2xl">
-            <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-[#a16a35]">02 &mdash; How we work</p>
-            <h2 className="serif text-balance text-4xl font-medium leading-[1.05] tracking-tight text-[#221d16] md:text-5xl">
-              Listen. Build.<br />Tend.
-            </h2>
-            <p className="mt-6 text-lg leading-relaxed text-[#3b3528]">
-              Three steps. No quarter-long discovery phases. No deck with stock photos of people pointing at screens.
-            </p>
-          </div>
-
-          <div className="mt-16 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
-            {[
-              { num: '01', name: 'Listen', color: '#4a7c8c', body: 'We sit down with you — in your shop, your office, your back room. We learn where the day goes and what\'s worth changing first. Thirty minutes, no pressure.' },
-              { num: '02', name: 'Build', color: '#7a9162', body: 'We build the first piece, connect it to what you already use, and test it on real data from your business. You see weekly progress, not a final reveal at the end.' },
-              { num: '03', name: 'Tend', color: '#a16a35', body: "AI tools need looking after, like anything growing. We stay on after launch — refining, expanding, on the phone when something breaks. We're an hour up the road, not a help desk overseas." },
-            ].map((step) => (
-              <div key={step.num} className="reveal relative">
-                <div className="serif text-6xl leading-none" style={{ color: `${step.color}55` }}>{step.num}</div>
-                <div className="serif mt-4 text-2xl text-[#221d16]">{step.name}</div>
-                <p className="mt-3 leading-relaxed text-[#3b3528]">{step.body}</p>
-              </div>
+          <div className="grid grid-cols-2 items-center gap-x-8 gap-y-6 sm:grid-cols-3 md:grid-cols-6 md:gap-x-2">
+            {TRUST_LOGOS.map((logo) => (
+              <TrustLogo key={logo.name} {...logo} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* why us */}
-      <section className="relative z-10 border-y border-[#cdbf9f]/40 bg-[#ede4d0]">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-12 px-6 py-28 md:grid-cols-12 md:py-36">
-          <div className="reveal md:col-span-7">
-            <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-[#3b6877]">03 &mdash; Why Susquehanna</p>
-            <h2 className="serif text-balance text-4xl font-medium leading-[1.05] tracking-tight text-[#221d16] md:text-5xl">
-              Local partner.<br /><span className="text-[#5f7549]">Frontier tools.</span>
-            </h2>
-            <p className="text-pretty mt-7 text-lg leading-relaxed text-[#3b3528]">
-              The big AI firms build for big-city budgets. The local tech guys haven't caught up yet. We're the bridge: serious engineering, applied to the businesses actually running NEPA.
-            </p>
-            <p className="text-pretty mt-4 text-lg leading-relaxed text-[#3b3528]">
-              We drive to your office. We answer the phone. And we believe AI shouldn't be something done <em>to</em> small towns by people far away &mdash; it should be built <em>with</em> the people already here.
-            </p>
-          </div>
+      {/* ============ MISSION (POSTCARD) ============ */}
+      <section id="susq-story" className="relative z-10">
+        <div className="mx-auto max-w-7xl px-6 py-20 md:py-28">
+          <div className="reveal postcard relative grid grid-cols-1 overflow-hidden rounded-md md:grid-cols-2">
+            {/* left: illustrated NEPA town */}
+            <div className="relative aspect-[5/4] overflow-hidden md:aspect-auto">
+              <MissionIllustration />
+            </div>
 
-          <div className="reveal grid grid-cols-2 gap-px bg-[#cdbf9f]/60 md:col-span-5">
-            {[
-              { stat: '10×', label: 'faster lead response than industry average' },
-              { stat: '24/7', label: 'coverage with no extra payroll' },
-              { stat: '2–4 wks', label: 'from kickoff to live system' },
-              { stat: 'NEPA', label: 'based, owned & operated — never offshored' },
-            ].map((s) => (
-              <div key={s.stat} className="bg-[#f5efe1] p-6">
-                <div className="serif text-4xl leading-none text-[#221d16]">{s.stat}</div>
-                <div className="mt-3 text-sm text-[#3b3528]">{s.label}</div>
+            {/* right: text + stamp */}
+            <div className="relative p-7 md:p-12">
+              {/* stamp */}
+              <div className="stamp absolute right-6 top-6 hidden h-20 w-16 md:block">
+                <div className="relative h-full w-full rounded-[3px] border-2 border-dashed border-[#a16a35]/70 bg-[#f5efe1] p-1 shadow-sm">
+                  <div className="flex h-full w-full flex-col items-center justify-center rounded-sm bg-[#c08c4a]/90 text-[9px] font-medium uppercase tracking-widest text-[#f5efe1]">
+                    <div className="serif text-[15px] leading-none">NEPA</div>
+                    <div className="mt-1 leading-none">2026</div>
+                    <div className="mt-1 h-[1px] w-6 bg-[#f5efe1]/60" />
+                    <div className="mt-1 leading-none">USA</div>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* our plan */}
-      <section id="susq-plan" className="relative z-10">
-        <div className="mx-auto max-w-7xl px-6 py-28 md:py-36">
-          <div className="grid grid-cols-1 items-start gap-12 md:grid-cols-12">
-            <div className="reveal md:col-span-5">
-              <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-[#5f7549]">04 &mdash; Our plan</p>
-              <h2 className="serif text-balance text-4xl font-medium leading-[1.05] tracking-tight text-[#221d16] md:text-5xl">
-                We're starting<br />with the restaurants.
+              <p className="text-[10.5px] font-semibold uppercase tracking-[0.26em] text-[#a16a35]">Our Mission</p>
+              <h2 className="serif mt-4 text-balance text-[32px] font-medium leading-[1.1] tracking-tight text-[#1b2f37] md:text-[40px]">
+                Rooted in NEPA.<br />Built for what's next.
               </h2>
-              <p className="text-pretty mt-7 text-lg leading-relaxed text-[#3b3528]">
-                Every small business here deserves modern tools. Restaurants are the wedge: they sit at the heart of every Main Street, they live and die by missed calls and full tables, and the work is concrete enough to ship in weeks.
+              <p className="text-pretty mt-5 max-w-md leading-relaxed text-[#3b3528]">
+                We exist to help the hardworking businesses of Northeastern Pennsylvania thrive in an AI-powered world &mdash; without losing the soul, service, and sense of place that make this region home.
               </p>
-              <p className="text-pretty mt-4 text-lg leading-relaxed text-[#3b3528]">
-                For our first restaurant partners, we're focused on three things &mdash; a modern website, an AI customer-service chatbot, and a missed-call rescue. Once we're running with enough kitchens, we expand out: dental, auto, salons &mdash; the same playbook, the same region.
+              <p className="serif mt-5 text-[18px] italic text-[#3b6877]">
+                Local roots. Lasting impact.
+              </p>
+
+              {/* botanical sprig */}
+              <svg viewBox="0 0 80 24" className="mt-6 h-5 text-[#7a9162]" aria-hidden>
+                <path d="M2 12 Q40 6 78 12" fill="none" stroke="currentColor" strokeWidth="1" />
+                <path d="M20 10 q-3 -4 -6 -3" fill="none" stroke="currentColor" strokeWidth="1" />
+                <path d="M30 9 q-2 -4 -5 -4" fill="none" stroke="currentColor" strokeWidth="1" />
+                <path d="M44 8 q-2 -4 -5 -4" fill="none" stroke="currentColor" strokeWidth="1" />
+                <path d="M58 9 q-2 -4 -5 -4" fill="none" stroke="currentColor" strokeWidth="1" />
+                <ellipse cx="14" cy="6" rx="3" ry="1.5" transform="rotate(-20 14 6)" fill="currentColor" opacity="0.6" />
+                <ellipse cx="25" cy="5" rx="3" ry="1.5" transform="rotate(-20 25 5)" fill="currentColor" opacity="0.6" />
+                <ellipse cx="39" cy="4" rx="3" ry="1.5" transform="rotate(-20 39 4)" fill="currentColor" opacity="0.6" />
+                <ellipse cx="53" cy="5" rx="3" ry="1.5" transform="rotate(-20 53 5)" fill="currentColor" opacity="0.6" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ TIMELINE — A RIVER RUNS THROUGH IT ============ */}
+      <section id="susq-journey" className="relative z-10">
+        <div className="mx-auto max-w-7xl px-6 py-16 md:py-24">
+          <div className="reveal mb-12 md:mb-16">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.26em] text-[#a16a35]">Our Journey</p>
+            <h2 className="serif mt-3 text-balance text-[34px] font-medium leading-tight tracking-tight text-[#1b2f37] md:text-[44px]">
+              A River Runs Through It
+            </h2>
+          </div>
+
+          <TimelineRiver eras={ERAS} />
+        </div>
+      </section>
+
+      {/* ============ SERVICES ============ */}
+      <section id="susq-services" className="relative z-10">
+        <div className="mx-auto max-w-7xl px-6 py-20 md:py-28">
+          <div className="reveal mb-10 text-center md:mb-14">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.26em] text-[#a16a35]">How We Help</p>
+            <h2 className="serif mt-3 text-balance text-[32px] font-medium leading-tight tracking-tight text-[#1b2f37] md:text-[42px]">
+              Practical AI Services for Local Business
+            </h2>
+          </div>
+
+          <div className="reveal grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+            {SERVICES.map((s) => (
+              <div key={s.title} className="feature-card rounded-xl p-5 text-center">
+                <div className="mx-auto mb-4 h-12 w-12 text-[#1b2f37]">{s.icon}</div>
+                <h3 className="serif text-[17px] font-medium leading-tight text-[#1b2f37]">{s.title}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-[#3b3528]">{s.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============ MANIFESTO QUOTE ============ */}
+      <section className="relative z-10">
+        <div className="reveal mx-auto max-w-4xl px-6 py-6 text-center md:py-12">
+          <p className="serif text-balance text-[22px] italic leading-[1.35] text-[#1b2f37] md:text-[30px]">
+            &ldquo;Technology should bend to the people, not the other way around.&rdquo;
+          </p>
+          <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.26em] text-[#a16a35]">
+            &mdash; Our Manifesto
+          </p>
+        </div>
+      </section>
+
+      {/* ============ APPROACH ============ */}
+      <section className="relative z-10">
+        <div className="mx-auto max-w-7xl px-6 py-16 md:py-24">
+          <p className="reveal text-center text-[10.5px] font-semibold uppercase tracking-[0.26em] text-[#a16a35]">
+            Our Approach
+          </p>
+
+          <div className="reveal mt-10 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-12">
+            {APPROACH.map((step) => (
+              <div key={step.num} className="flex flex-col items-center text-center md:flex-row md:items-start md:text-left">
+                <div className="mb-4 flex items-start gap-4 md:mb-0 md:mr-5">
+                  <div className="serif text-[52px] font-medium leading-none text-[#1b2f37]/85">{step.num}</div>
+                </div>
+                <div className="flex flex-col items-center md:items-start">
+                  <h3 className="serif text-[22px] font-medium leading-tight text-[#1b2f37]">{step.name}</h3>
+                  <div className="my-3 h-14 w-20 text-[#465938]">{step.icon}</div>
+                  <p className="max-w-[230px] text-[14px] leading-relaxed text-[#3b3528]">{step.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="reveal mt-12 flex justify-center md:mt-16">
+            <div className="flex items-center gap-3 text-[#75694d]">
+              <span className="h-px w-12 bg-[#cdbf9f]" />
+              <span className="text-[10.5px] uppercase tracking-[0.26em]">·</span>
+              <span className="h-px w-12 bg-[#cdbf9f]" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ WHY US + RESTAURANTS (split) ============ */}
+      <section id="susq-restaurants" className="relative z-10">
+        <div className="mx-auto max-w-7xl px-6 pb-16 md:pb-24">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {/* WHY US */}
+            <div className="reveal deckle rounded-md p-7 md:p-9">
+              <p className="text-[10.5px] font-semibold uppercase tracking-[0.26em] text-[#a16a35]">
+                Why Choose Susquehanna
+              </p>
+              <h3 className="serif mt-2 text-[28px] font-medium leading-tight text-[#1b2f37] md:text-[32px]">
+                Local people. Real results.
+              </h3>
+              <p className="mt-3 max-w-md text-[14px] leading-relaxed text-[#3b3528]">
+                We're not a faceless platform. We're your neighbors &mdash; invested in NEPA's success and committed to doing things the right way.
+              </p>
+
+              <div className="mt-7 grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-4">
+                {STATS.map((s) => (
+                  <div key={s.label}>
+                    <div className="flex items-center gap-1.5 text-[#a16a35]">
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M9 12l2 2 4-4" />
+                      </svg>
+                    </div>
+                    <div className="serif mt-1 text-[26px] font-medium leading-none text-[#1b2f37]">{s.value}</div>
+                    <div className="mt-1.5 text-[11.5px] leading-tight text-[#3b3528]">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-5 text-[10.5px] italic text-[#75694d]">
+                *Early pilot and client-reported data.
               </p>
             </div>
 
-            <div className="reveal grid grid-cols-1 gap-5 sm:grid-cols-2 md:col-span-7 lg:grid-cols-3">
-              <div className="card rounded-2xl p-6 lg:col-span-1 sm:col-span-2 lg:row-start-1">
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#8aaab5] bg-[#cddbe0]">
-                    <svg className="h-5 w-5 text-[#3b6877]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="4" width="18" height="14" rx="2" />
-                      <line x1="3" y1="9" x2="21" y2="9" />
-                      <line x1="7" y1="13" x2="11" y2="13" />
-                    </svg>
-                  </div>
-                  <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#75694d]">Offering / 01</span>
-                </div>
-                <h3 className="serif text-xl leading-tight text-[#221d16]">Modern restaurant website</h3>
-                <p className="mt-3 text-sm leading-relaxed text-[#3b3528]">
-                  Mobile-fast, &ldquo;near me&rdquo; SEO, menu front-and-center, and ready to capture bookings the moment someone lands.
-                </p>
-              </div>
+            {/* RESTAURANTS */}
+            <div className="reveal deckle rounded-md p-7 md:p-9">
+              <p className="text-[10.5px] font-semibold uppercase tracking-[0.26em] text-[#a16a35]">
+                We're starting with the restaurants
+              </p>
+              <h3 className="serif mt-2 text-[28px] font-medium leading-tight text-[#1b2f37] md:text-[32px]">
+                Built for the rhythm of your service.
+              </h3>
 
-              <div className="card rounded-2xl p-6">
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#7a9162]/60 bg-[#a8b888]/30">
-                    <svg className="h-5 w-5 text-[#465938]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                  </div>
-                  <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#75694d]">Offering / 02</span>
-                </div>
-                <h3 className="serif text-xl leading-tight text-[#221d16]">Customer-service chatbot</h3>
-                <p className="mt-3 text-sm leading-relaxed text-[#3b3528]">
-                  Trained on your hours, menu, allergens, reservation policy. Answers in your voice. Captures leads when you're closed.
-                </p>
-              </div>
-
-              <div className="card rounded-2xl p-6">
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#a16a35]/60 bg-[#c89761]/20">
-                    <svg className="h-5 w-5 text-[#a16a35]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                      <line x1="13" y1="3" x2="19" y2="9" />
-                      <line x1="19" y1="3" x2="13" y2="9" />
-                    </svg>
-                  </div>
-                  <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#75694d]">Offering / 03</span>
-                </div>
-                <h3 className="serif text-xl leading-tight text-[#221d16]">Missed-call rescue</h3>
-                <p className="mt-3 text-sm leading-relaxed text-[#3b3528]">
-                  Every call you don't catch gets an AI text in five seconds: &ldquo;Sorry we missed you &mdash; can we book you for tonight?&rdquo; Captures revenue that's leaking right now.
-                </p>
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <RestaurantCard
+                  title="AI Phone Receptionist"
+                  body="Never miss a call. Capture every guest opportunity."
+                  icon={<PhoneIcon />}
+                />
+                <RestaurantCard
+                  title="Reservations & Waitlists"
+                  body="More tables filled. Smarter lists. Happier guests."
+                  icon={<BellIcon />}
+                />
+                <RestaurantCard
+                  title="Guest Follow-Up"
+                  body="Thank guests, get reviews, and bring them back — automatically."
+                  icon={<EnvelopeIcon />}
+                />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* charter members */}
+      {/* ============ CHARTER MEMBERS ============ */}
       <section id="susq-charter" className="relative z-10">
-        <div className="mx-auto max-w-7xl px-6 pt-24 md:pt-28">
-          <div className="relative overflow-hidden rounded-3xl bg-[#1b2f37] p-10 text-[#f5efe1] md:p-14">
-            <svg className="pointer-events-none absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 800 400" aria-hidden>
-              <path d="M0 80 Q200 40 400 70 T800 60" fill="none" stroke="#8aaab5" strokeWidth="1" opacity="0.25" />
-              <path d="M0 130 Q200 90 400 120 T800 110" fill="none" stroke="#8aaab5" strokeWidth="1" opacity="0.18" />
-              <path d="M0 200 Q200 160 400 180 T800 170" fill="none" stroke="#a8b888" strokeWidth="1" opacity="0.18" />
-              <path d="M0 260 Q200 220 400 240 T800 230" fill="none" stroke="#a8b888" strokeWidth="1" opacity="0.12" />
-              <path d="M0 320 Q200 280 400 300 T800 290" fill="none" stroke="#a8b888" strokeWidth="1" opacity="0.1" />
+        <div className="mx-auto max-w-7xl px-6 pb-16 md:pb-24">
+          <div className="relative overflow-hidden rounded-lg bg-[#1b2f37] p-7 text-[#f5efe1] md:p-12">
+            {/* river illustration backdrop */}
+            <svg viewBox="0 0 1200 360" preserveAspectRatio="xMidYMid slice" className="pointer-events-none absolute inset-0 h-full w-full opacity-50" aria-hidden>
+              <path d="M0 240 Q200 200 400 230 T800 230 T1200 220" fill="none" stroke="#8aaab5" strokeWidth="1.2" />
+              <path d="M0 270 Q200 230 400 260 T800 260 T1200 250" fill="none" stroke="#8aaab5" strokeWidth="1" opacity="0.7" />
+              <path d="M0 300 Q200 260 400 290 T800 290 T1200 280" fill="none" stroke="#a8b888" strokeWidth="1" opacity="0.6" />
+              {/* trees right */}
+              <g fill="none" stroke="#a8b888" strokeWidth="0.8" opacity="0.55">
+                <path d="M1080 200 L1080 240 M1075 220 q5 -16 10 0 M1072 210 q8 -20 16 0" />
+                <path d="M1130 180 L1130 240 M1122 210 q8 -22 16 0 M1118 195 q12 -28 24 0" />
+              </g>
+              {/* trees left */}
+              <g fill="none" stroke="#a8b888" strokeWidth="0.8" opacity="0.5">
+                <path d="M80 200 L80 240 M72 220 q8 -22 16 0" />
+              </g>
             </svg>
 
-            <div className="relative grid grid-cols-1 items-start gap-10 md:grid-cols-12">
-              <div className="md:col-span-7">
-                <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-[#8aaab5]">Charter members</p>
-                <h2 className="serif text-balance text-3xl font-medium leading-tight md:text-5xl">
-                  The first ten businesses<br />building this together.
-                </h2>
-                <p className="mt-5 max-w-2xl leading-relaxed text-[#cddbe0]/90">
-                  We're looking for ten NEPA restaurants to charter the cooperative. Free first build &mdash; modern site, customer-service chatbot, missed-call rescue &mdash; in exchange for one thing: you help us prove that this can work here. Your name on the page. Your story in the playbook. The first link in the chain.
+            <div className="relative grid grid-cols-1 items-center gap-8 md:grid-cols-12">
+              <div className="md:col-span-5">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.26em] text-[#c08c4a]">
+                  Charter Members
                 </p>
-
-                <ul className="mt-7 space-y-3 text-[15px] text-[#cddbe0]/90">
-                  <li className="flex items-start gap-3">
-                    <span className="mt-2 inline-block h-px w-3 bg-[#a8b888]" />
-                    <span>Free first build, no contract, no risk</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="mt-2 inline-block h-px w-3 bg-[#a8b888]" />
-                    <span>Founding-member rates locked in for the cooperative, forever</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="mt-2 inline-block h-px w-3 bg-[#a8b888]" />
-                    <span>Your input shapes what every NEPA business gets next</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="mt-2 inline-block h-px w-3 bg-[#a8b888]" />
-                    <span>If it doesn't save you real time in 30 days, you owe nothing</span>
-                  </li>
-                </ul>
+                <h2 className="serif mt-3 text-balance text-[30px] font-medium leading-tight md:text-[36px]">
+                  Help shape what's next.
+                </h2>
+                <p className="mt-3 max-w-md text-[14px] leading-relaxed text-[#cddbe0]/85">
+                  We're onboarding our first 10 partners to help build, test, and guide Susquehanna from the ground up.
+                </p>
               </div>
 
-              {/* Network counter */}
-              <div className="md:col-span-5">
-                <div className="rounded-2xl border border-[#8aaab5]/30 bg-[#0d1f25]/60 p-7 backdrop-blur-sm">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#8aaab5]">Membership</p>
-                  <div className="mt-3 flex items-baseline gap-2">
-                    <span className="serif text-7xl font-medium text-[#f5efe1]">1</span>
-                    <span className="serif text-3xl text-[#8aaab5]">/ 10</span>
-                  </div>
-                  <p className="mt-1 text-[13px] text-[#cddbe0]/70">charter spots claimed</p>
+              <div className="text-center md:col-span-3">
+                <div className="flex items-baseline justify-center gap-2">
+                  <span className="serif text-[64px] font-medium leading-none text-[#f5efe1] md:text-[80px]">{CHARTER_CLAIMED}</span>
+                  <span className="serif text-[28px] text-[#8aaab5] md:text-[36px]">/{CHARTER_TOTAL}</span>
+                </div>
+                <p className="mt-2 text-[10.5px] font-semibold uppercase tracking-[0.26em] text-[#8aaab5]">
+                  Charter positions claimed
+                </p>
+                <div className="mt-4 flex justify-center gap-2">
+                  {Array.from({ length: CHARTER_TOTAL }).map((_, i) => (
+                    <span
+                      key={i}
+                      className={`h-3 w-3 rounded-full ${
+                        i < CHARTER_CLAIMED
+                          ? 'bg-[#c08c4a]'
+                          : 'border border-[#c08c4a]/45 bg-transparent'
+                      }`}
+                      aria-hidden
+                    />
+                  ))}
+                </div>
+              </div>
 
-                  {/* dots row */}
-                  <div className="mt-5 flex gap-1.5">
-                    {Array.from({ length: 10 }).map((_, i) => {
-                      const filled = i < 1
-                      return (
-                        <span
-                          key={i}
-                          className={`h-2 flex-1 rounded-full ${
-                            filled ? 'bg-[#a8b888]' : 'bg-[#8aaab5]/20'
-                          }`}
-                          aria-hidden
-                        />
-                      )
-                    })}
-                  </div>
+              <div className="md:col-span-4">
+                <p className="mb-4 text-[10.5px] font-semibold uppercase tracking-[0.26em] text-[#c08c4a]">
+                  Founding Member Benefits
+                </p>
+                <ul className="space-y-2 text-[14px] text-[#cddbe0]">
+                  {CHARTER_BENEFITS.map((b) => (
+                    <li key={b} className="flex items-center gap-2.5">
+                      <svg className="h-4 w-4 shrink-0 text-[#c08c4a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      {b}
+                    </li>
+                  ))}
+                </ul>
 
-                  <a
-                    href="#susq-contact"
-                    className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#f5efe1] px-6 py-3.5 font-medium text-[#1b2f37] transition hover:bg-[#f0e9d8]"
-                  >
-                    Become a charter member
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
+                <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
+                  <a href="#susq-contact" className="btn-ochre inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-[14px] font-medium">
+                    Apply for Charter Membership
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
                   </a>
-                  <button
-                    onClick={openDemo}
-                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#8aaab5]/40 px-6 py-3 text-[14px] font-medium text-[#cddbe0] transition hover:bg-[#f5efe1]/5"
-                  >
-                    <span className="relative flex h-2 w-2">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#a8b888] opacity-60" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-[#a8b888]" />
-                    </span>
-                    Talk to the AI first
+                  <button onClick={openDemo} className="inline-flex items-center justify-center gap-2 rounded-full text-[14px] font-medium text-[#cddbe0] underline-grow">
+                    Learn More
                   </button>
                 </div>
               </div>
@@ -785,84 +727,83 @@ export default function Landing({ onClose }: { onClose: () => void }) {
         </div>
       </section>
 
-      {/* contact */}
+      {/* ============ CONTACT ============ */}
       <section id="susq-contact" className="relative z-10">
-        <div className="mx-auto max-w-3xl px-6 py-28 text-center md:py-36">
-          <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-[#4a4233]">Let's talk</p>
-          <h2 className="serif text-balance text-4xl font-medium leading-[1.05] tracking-tight text-[#221d16] md:text-5xl">
-            Find out what ten hours<br />a week back looks like.
-          </h2>
-          <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-[#3b3528]">
-            Tell us a bit about your business. We'll get back to you within one business day with where AI fits &mdash; and where it doesn't.
-          </p>
-
-          <form
-            className="mt-12 grid gap-3 text-left"
-            onSubmit={(e) => {
-              e.preventDefault()
-              setSubmitted(true)
-            }}
-          >
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input required type="text" placeholder="Your name" className="rounded-xl border border-[#cdbf9f] bg-[#f5efe1] px-4 py-3 text-[#221d16] placeholder-[#75694d] transition focus:border-[#4a7c8c] focus:outline-none" />
-              <input required type="text" placeholder="Business name" className="rounded-xl border border-[#cdbf9f] bg-[#f5efe1] px-4 py-3 text-[#221d16] placeholder-[#75694d] transition focus:border-[#4a7c8c] focus:outline-none" />
+        <div className="mx-auto max-w-7xl px-6 pb-16 md:pb-24">
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-12">
+            <div className="md:col-span-4">
+              <p className="text-[10.5px] font-semibold uppercase tracking-[0.26em] text-[#a16a35]">Let's start a conversation</p>
+              <h2 className="serif mt-3 text-balance text-[30px] font-medium leading-tight text-[#1b2f37] md:text-[36px]">
+                We'd love to hear from you.
+              </h2>
+              <p className="mt-4 max-w-sm text-[14px] leading-relaxed text-[#3b3528]">
+                Tell us about your business and what you're looking to achieve. We'll get back to you within one business day.
+              </p>
             </div>
-            <input required type="email" placeholder="Email" className="rounded-xl border border-[#cdbf9f] bg-[#f5efe1] px-4 py-3 text-[#221d16] placeholder-[#75694d] transition focus:border-[#4a7c8c] focus:outline-none" />
-            <textarea rows={3} placeholder="What's eating the most time right now? (optional)" className="resize-none rounded-xl border border-[#cdbf9f] bg-[#f5efe1] px-4 py-3 text-[#221d16] placeholder-[#75694d] transition focus:border-[#4a7c8c] focus:outline-none" />
-            <button
-              type="submit"
-              disabled={submitted}
-              className="btn-primary mt-2 rounded-full px-6 py-3.5 font-medium disabled:opacity-80"
+
+            <form
+              className="grid gap-3 md:col-span-5"
+              onSubmit={(e) => {
+                e.preventDefault()
+                setSubmitted(true)
+              }}
             >
-              {submitted ? "Thanks — we'll be in touch." : 'Request your free pilot'}
-            </button>
-            <p className="mt-3 text-center text-xs text-[#4a4233]">
-              Or email us directly:{' '}
-              <a href="mailto:hello@susquehanna.ai" className="underline-grow text-[#221d16] underline hover:text-[#3b6877]">
-                hello@susquehanna.ai
-              </a>
-            </p>
-          </form>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <input required type="text" placeholder="Full Name" className="rounded-md border border-[#cdbf9f] bg-[#fffaee] px-4 py-3 text-[14px] text-[#221d16] placeholder-[#75694d] transition focus:border-[#c08c4a] focus:outline-none" />
+                <input required type="text" placeholder="Business Name" className="rounded-md border border-[#cdbf9f] bg-[#fffaee] px-4 py-3 text-[14px] text-[#221d16] placeholder-[#75694d] transition focus:border-[#c08c4a] focus:outline-none" />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <input required type="email" placeholder="Email Address" className="rounded-md border border-[#cdbf9f] bg-[#fffaee] px-4 py-3 text-[14px] text-[#221d16] placeholder-[#75694d] transition focus:border-[#c08c4a] focus:outline-none" />
+                <input type="tel" placeholder="Phone Number" className="rounded-md border border-[#cdbf9f] bg-[#fffaee] px-4 py-3 text-[14px] text-[#221d16] placeholder-[#75694d] transition focus:border-[#c08c4a] focus:outline-none" />
+              </div>
+              <textarea rows={4} placeholder="How can we help?" className="resize-none rounded-md border border-[#cdbf9f] bg-[#fffaee] px-4 py-3 text-[14px] text-[#221d16] placeholder-[#75694d] transition focus:border-[#c08c4a] focus:outline-none" />
+              <button
+                type="submit"
+                disabled={submitted}
+                className="btn-navy mt-1 inline-flex w-fit items-center gap-2 rounded-full px-7 py-3 text-[14px] font-medium disabled:opacity-80"
+              >
+                {submitted ? "Thanks — we'll be in touch." : (
+                  <>
+                    Send Message
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="md:col-span-3">
+              <p className="text-[14px] leading-relaxed text-[#3b3528]">
+                Proudly based in NEPA. Serving businesses across the region we call home.
+              </p>
+              <div className="mt-4 flex items-center gap-3 text-[#75694d]">
+                <SocialIcon kind="facebook" />
+                <SocialIcon kind="instagram" />
+                <SocialIcon kind="linkedin" />
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* footer wave */}
-      <div className="wave-divider -mb-1 leading-none">
-        <svg viewBox="0 0 1440 90" preserveAspectRatio="none" className="h-[70px] w-full">
-          <path d="M0 50 Q180 20 360 40 T720 40 T1080 40 T1440 30 L1440 90 L0 90 Z" fill="#1b2f37" />
-        </svg>
-      </div>
-
-      <footer className="relative z-10 bg-[#1b2f37] text-[#f5efe1]">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-8 px-6 py-12 md:grid-cols-3">
+      {/* ============ FOOTER ============ */}
+      <footer className="relative z-10 border-t border-[#cdbf9f]/40 bg-[#ede4d0]/60">
+        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-6 py-7 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="flex items-center gap-2.5">
-              <svg viewBox="0 0 40 40" className="h-8 w-8" aria-hidden>
-                <path d="M3 22 Q10 14 18 20 T36 18" fill="none" stroke="#8aaab5" strokeWidth="2.4" strokeLinecap="round" />
-                <path d="M3 28 Q11 22 19 26 T36 24" fill="none" stroke="#a8b888" strokeWidth="2.4" strokeLinecap="round" />
-              </svg>
-              <span className="serif text-xl font-medium">Susquehanna</span>
+            <div className="serif text-[18px] font-medium tracking-[0.04em] text-[#1b2f37]">SUSQUEHANNA</div>
+            <div className="mt-0.5 text-[9.5px] font-medium uppercase tracking-[0.26em] text-[#75694d]">
+              AI for Northeast Pennsylvania
             </div>
-            <p className="mt-3 max-w-xs text-sm leading-relaxed text-[#cddbe0]/70">
-              AI for the small businesses of Northeastern Pennsylvania. Built here. Tended here.
-            </p>
           </div>
-          <div className="text-sm text-[#cddbe0]/80">
-            <div className="mb-3 text-[11px] font-medium uppercase tracking-[0.22em] text-[#8aaab5]">Get in touch</div>
-            <a href="mailto:hello@susquehanna.ai" className="block transition hover:text-[#f5efe1]">hello@susquehanna.ai</a>
-            <span className="mt-1 block text-[#cddbe0]/60">Serving Scranton, Wilkes-Barre, the Poconos &amp; beyond</span>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[12.5px] text-[#3b3528]">
+            <a href="#susq-services" className="underline-grow">Services</a>
+            <a href="#susq-restaurants" className="underline-grow">For Restaurants</a>
+            <a href="#susq-story" className="underline-grow">Our Story</a>
+            <a href="#susq-services" className="underline-grow">Resources</a>
+            <span className="text-[#3b3528]/70">Privacy Policy</span>
+            <span className="text-[#3b3528]/70">Terms of Service</span>
           </div>
-          <div className="text-sm text-[#cddbe0]/80 md:text-right">
-            <div className="mb-3 text-[11px] font-medium uppercase tracking-[0.22em] text-[#8aaab5]">Explore</div>
-            <a href="#susq-services" className="block transition hover:text-[#f5efe1]">Services</a>
-            <a href="#susq-approach" className="block transition hover:text-[#f5efe1]">Approach</a>
-            <a href="#susq-local" className="block transition hover:text-[#f5efe1]">Local</a>
-          </div>
-        </div>
-        <div className="border-t border-[#2e525e]/60">
-          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 py-5 text-xs text-[#cddbe0]/60 md:flex-row">
-            <span>&copy; 2026 Susquehanna AI. All rights reserved.</span>
-            <span className="serif italic">&ldquo;The river built this region. We're building its next economy.&rdquo;</span>
+          <div className="text-right text-[11px] text-[#75694d]">
+            © 2026 Susquehanna AI, LLC.<br />All rights reserved.
           </div>
         </div>
       </footer>
@@ -875,5 +816,352 @@ export default function Landing({ onClose }: { onClose: () => void }) {
         onPromptConsumed={() => setChatPrompt(null)}
       />
     </div>
+  )
+}
+
+/* ============================================================
+   ILLUSTRATION SUB-COMPONENTS
+   These are stylized SVG approximations of the hand-drawn
+   illustrations in the design mockup. Replace any of them with
+   real watercolor/hand-illustrated PNGs by:
+     - dropping the image into /public/susquehanna/<name>.png
+     - swapping the <svg>...</svg> for <img src="/susquehanna/<name>.png" />
+   ============================================================ */
+
+function HeroIllustration() {
+  return (
+    <div className="postcard relative aspect-[5/4] overflow-hidden rounded-lg">
+      {/* backdrop scene: window with mountains + river */}
+      <svg viewBox="0 0 500 400" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full" aria-hidden>
+        <defs>
+          <linearGradient id="hero-wall" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#e9d8b3" />
+            <stop offset="100%" stopColor="#d8c79b" />
+          </linearGradient>
+          <linearGradient id="hero-sky" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#e9d8b3" />
+            <stop offset="80%" stopColor="#cddbe0" />
+          </linearGradient>
+          <linearGradient id="hero-water" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#8aaab5" />
+            <stop offset="100%" stopColor="#3b6877" />
+          </linearGradient>
+        </defs>
+        <rect width="500" height="400" fill="url(#hero-wall)" />
+        {/* wood panels */}
+        <g opacity="0.4">
+          <line x1="0" y1="260" x2="500" y2="260" stroke="#a16a35" strokeWidth="0.5" />
+          <line x1="0" y1="310" x2="500" y2="310" stroke="#a16a35" strokeWidth="0.5" />
+          <line x1="0" y1="350" x2="500" y2="350" stroke="#a16a35" strokeWidth="0.5" />
+        </g>
+        {/* window frame with view */}
+        <g>
+          <rect x="320" y="60" width="150" height="160" fill="url(#hero-sky)" stroke="#75694d" strokeWidth="2" />
+          {/* distant mountains */}
+          <path d="M320 170 L340 150 L370 165 L395 145 L425 160 L450 145 L470 160 L470 220 L320 220 Z" fill="#5f7549" opacity="0.7" />
+          <path d="M320 180 L350 165 L385 175 L420 160 L450 170 L470 165 L470 220 L320 220 Z" fill="#465938" opacity="0.85" />
+          {/* river */}
+          <path d="M320 200 Q360 192 395 200 T470 200 L470 220 L320 220 Z" fill="url(#hero-water)" />
+          {/* sun */}
+          <circle cx="440" cy="100" r="14" fill="#c08c4a" opacity="0.65" />
+        </g>
+        {/* picture frames on wall */}
+        <g stroke="#75694d" strokeWidth="1.5" fill="#f3ead2">
+          <rect x="50" y="80" width="40" height="50" />
+          <rect x="105" y="65" width="55" height="40" />
+          <rect x="178" y="80" width="38" height="46" />
+        </g>
+        {/* counter / desk */}
+        <rect x="50" y="260" width="430" height="90" fill="#a16a35" opacity="0.75" />
+        <rect x="50" y="260" width="430" height="6" fill="#75694d" />
+        {/* sign */}
+        <g transform="translate(245 340)">
+          <rect x="-50" y="-12" width="100" height="22" fill="#f3ead2" stroke="#75694d" strokeWidth="1" />
+          <text x="0" y="3" textAnchor="middle" fontFamily="Fraunces, serif" fontSize="9" fill="#1b2f37">
+            WELCOME
+          </text>
+          <text x="0" y="14" textAnchor="middle" fontFamily="Fraunces, serif" fontStyle="italic" fontSize="8" fill="#3b6877">
+            to The River Table
+          </text>
+        </g>
+        {/* plant */}
+        <g transform="translate(75 230)">
+          <path d="M0 30 q-4 -22 0 -28 q4 6 0 28" fill="#5f7549" opacity="0.85" />
+          <path d="M-4 30 q-10 -16 -2 -26 q6 8 2 26" fill="#7a9162" opacity="0.85" />
+          <path d="M4 30 q10 -16 2 -26 q-6 8 -2 26" fill="#7a9162" opacity="0.85" />
+          <rect x="-9" y="28" width="18" height="14" fill="#a16a35" />
+        </g>
+        {/* simplified figure at counter (hostess) */}
+        <g transform="translate(245 230)">
+          {/* hair bun */}
+          <circle cx="0" cy="-30" r="8" fill="#3b2618" />
+          <circle cx="0" cy="-40" r="5" fill="#3b2618" />
+          {/* face */}
+          <ellipse cx="0" cy="-18" rx="9" ry="10" fill="#e9c9a3" />
+          {/* body */}
+          <path d="M-18 -8 q0 -4 4 -6 q6 -3 14 -3 q8 0 14 3 q4 2 4 6 v36 h-36 z" fill="#3b3528" />
+          {/* arms / tablet */}
+          <rect x="-14" y="6" width="28" height="18" rx="2" fill="#1b2f37" />
+          <rect x="-12" y="8" width="24" height="14" rx="1" fill="#cddbe0" />
+        </g>
+      </svg>
+
+      {/* floating UI cards */}
+      <div className="absolute left-4 top-4 max-w-[180px] rounded-lg border border-[#d8c79b] bg-[#fffaee]/95 p-3 shadow-sm backdrop-blur">
+        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-[#75694d]">
+          <svg className="h-3 w-3 text-[#3b6877]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 10h.01M12 10h.01M16 10h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" /></svg>
+          <span>Table for 4</span>
+        </div>
+        <div className="serif mt-1 text-[13px] text-[#1b2f37]">Tonight at 6:30 PM</div>
+      </div>
+
+      <div className="drift absolute left-4 bottom-32 max-w-[210px] rounded-lg border border-[#d8c79b] bg-[#fffaee]/95 p-3 shadow-md">
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold text-[#5f7549]">
+          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+          Reservation Confirmed
+        </div>
+        <div className="serif mt-1.5 text-[14px] text-[#1b2f37]">The River Table</div>
+        <div className="mt-1 text-[11px] text-[#3b3528]">6:30 PM · Table 12 · Special Occasion</div>
+        <button className="mt-2 w-full rounded border border-[#cdbf9f] bg-[#f3ead2] px-2 py-1 text-[11px] font-medium text-[#1b2f37]">
+          Add to Waitlist
+        </button>
+        <div className="mt-2 flex items-center gap-1 text-[10px] text-[#75694d]">
+          <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+          Send Pre-Visit Note
+        </div>
+      </div>
+
+      <div className="absolute right-4 bottom-4 max-w-[170px] rounded-lg border border-[#d8c79b] bg-[#fffaee]/95 p-3 shadow-md">
+        <div className="text-[10px] font-semibold uppercase tracking-widest text-[#1b2f37]">Tonight's Snapshot</div>
+        <div className="mt-2 space-y-1 text-[11px]">
+          <div className="flex justify-between text-[#3b3528]"><span>Reservations</span><span className="serif text-[#1b2f37]">28</span></div>
+          <div className="flex justify-between text-[#3b3528]"><span>Walk-ins</span><span className="serif text-[#1b2f37]">9</span></div>
+          <div className="flex justify-between text-[#3b3528]"><span>Waitlist</span><span className="serif text-[#1b2f37]">6</span></div>
+        </div>
+        <div className="mt-2 border-t border-[#cdbf9f]/60 pt-2 text-[10px] text-[#5f7549]">
+          <div className="font-semibold uppercase tracking-widest">AI Suggestion</div>
+          <div className="mt-1 text-[#3b3528] leading-snug">Prep for a busy 6–8pm window. Upsize staff and notify kitchen.</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MissionIllustration() {
+  return (
+    <svg viewBox="0 0 500 400" preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden>
+      <defs>
+        <linearGradient id="mission-sky" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#e9d8b3" />
+          <stop offset="100%" stopColor="#f3ead2" />
+        </linearGradient>
+        <linearGradient id="mission-river" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#8aaab5" />
+          <stop offset="100%" stopColor="#3b6877" />
+        </linearGradient>
+      </defs>
+      <rect width="500" height="400" fill="url(#mission-sky)" />
+      {/* distant mountains */}
+      <path d="M0 180 L50 130 L100 160 L160 110 L220 150 L290 120 L360 155 L420 130 L500 165 L500 240 L0 240 Z" fill="#7a9162" opacity="0.55" />
+      <path d="M0 200 L60 170 L130 195 L200 165 L260 190 L330 165 L400 195 L460 175 L500 200 L500 260 L0 260 Z" fill="#5f7549" opacity="0.75" />
+      {/* bridge across river */}
+      <g stroke="#75694d" strokeWidth="1.5" fill="#a16a35" opacity="0.8">
+        <path d="M40 250 q30 -20 60 0 q30 -20 60 0 q30 -20 60 0 L220 260 L40 260 Z" />
+        <line x1="50" y1="260" x2="50" y2="280" />
+        <line x1="100" y1="260" x2="100" y2="280" />
+        <line x1="150" y1="260" x2="150" y2="280" />
+        <line x1="200" y1="260" x2="200" y2="280" />
+      </g>
+      {/* town */}
+      <g>
+        {/* church */}
+        <rect x="240" y="200" width="40" height="60" fill="#a16a35" />
+        <polygon points="240,200 260,170 280,200" fill="#75694d" />
+        <rect x="255" y="175" width="10" height="20" fill="#75694d" />
+        <polygon points="255,175 260,165 265,175" fill="#1b2f37" />
+        {/* houses */}
+        <rect x="290" y="220" width="35" height="40" fill="#c08c4a" />
+        <polygon points="290,220 308,205 325,220" fill="#75694d" />
+        <rect x="335" y="225" width="30" height="35" fill="#a16a35" />
+        <polygon points="335,225 350,212 365,225" fill="#75694d" />
+        <rect x="375" y="215" width="38" height="45" fill="#c08c4a" />
+        <polygon points="375,215 394,200 413,215" fill="#75694d" />
+        {/* windows */}
+        <g fill="#f3ead2">
+          <rect x="298" y="235" width="6" height="8" />
+          <rect x="312" y="235" width="6" height="8" />
+          <rect x="345" y="238" width="5" height="7" />
+          <rect x="355" y="238" width="5" height="7" />
+          <rect x="382" y="230" width="6" height="8" />
+          <rect x="396" y="230" width="6" height="8" />
+        </g>
+      </g>
+      {/* trees */}
+      <g fill="#465938" opacity="0.9">
+        <path d="M20 240 q4 -28 8 0" />
+        <path d="M35 245 q5 -34 10 0" />
+        <path d="M425 235 q5 -32 10 0" />
+        <path d="M445 240 q4 -28 8 0" />
+        <path d="M465 245 q4 -28 8 0" />
+      </g>
+      {/* river */}
+      <path d="M0 300 Q120 280 240 295 T500 290 L500 400 L0 400 Z" fill="url(#mission-river)" />
+      <path d="M40 320 Q140 305 240 315 T480 315" fill="none" stroke="#cddbe0" strokeWidth="1" opacity="0.7" />
+      <path d="M20 340 Q150 325 260 335 T490 335" fill="none" stroke="#cddbe0" strokeWidth="1" opacity="0.5" />
+    </svg>
+  )
+}
+
+function TimelineRiver({ eras }: { eras: typeof ERAS }) {
+  return (
+    <div className="relative">
+      {/* flowing river backdrop */}
+      <svg viewBox="0 0 1200 360" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full" aria-hidden>
+        <defs>
+          <linearGradient id="tl-river" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#8aaab5" />
+            <stop offset="100%" stopColor="#3b6877" />
+          </linearGradient>
+        </defs>
+        {/* meandering river */}
+        <path d="M0 200 Q150 140 320 200 T640 220 T960 200 T1200 240 L1200 360 L0 360 Z" fill="url(#tl-river)" opacity="0.6" />
+        <path d="M0 220 Q150 160 320 220 T640 240 T960 220 T1200 260" fill="none" stroke="#cddbe0" strokeWidth="1" opacity="0.5" />
+        <path d="M0 240 Q150 180 320 240 T640 260 T960 240 T1200 280" fill="none" stroke="#cddbe0" strokeWidth="1" opacity="0.4" />
+        {/* pine trees scattered */}
+        <g fill="#465938" opacity="0.85">
+          <path d="M70 200 q4 -28 8 0 z" />
+          <path d="M90 195 q5 -35 10 0 z" />
+          <path d="M275 180 q5 -36 10 0 z" />
+          <path d="M540 200 q5 -35 10 0 z" />
+          <path d="M820 195 q5 -34 10 0 z" />
+          <path d="M1100 165 q5 -36 10 0 z" />
+          <path d="M1130 200 q4 -28 8 0 z" />
+        </g>
+        {/* small rowboat with 3 figures */}
+        <g transform="translate(1010 240)">
+          <path d="M-30 0 q30 14 60 0 L20 8 L-20 8 Z" fill="#75694d" />
+          <circle cx="-12" cy="-6" r="3" fill="#3b3528" />
+          <circle cx="0" cy="-7" r="3" fill="#3b3528" />
+          <circle cx="12" cy="-6" r="3" fill="#3b3528" />
+          <rect x="-13" y="-3" width="6" height="6" fill="#a16a35" />
+          <rect x="-1" y="-4" width="6" height="7" fill="#a16a35" />
+          <rect x="11" y="-3" width="6" height="6" fill="#a16a35" />
+        </g>
+      </svg>
+
+      {/* era nodes */}
+      <div className="reveal relative grid grid-cols-1 gap-y-12 pt-2 md:grid-cols-5 md:gap-x-2 md:pt-12">
+        {eras.map((era, i) => (
+          <div
+            key={era.range}
+            className={`relative px-3 ${i % 2 === 1 ? 'md:mt-24' : ''}`}
+          >
+            {/* pin */}
+            <div className="mb-3 flex items-center gap-2">
+              <svg viewBox="0 0 16 24" className="h-5 w-3.5 text-[#5f7549]" aria-hidden>
+                <path d="M8 0 C3.5 0 0 3.5 0 8 C0 13 8 24 8 24 C8 24 16 13 16 8 C16 3.5 12.5 0 8 0 Z" fill="currentColor" />
+                <circle cx="8" cy="8" r="3" fill="#f5efe1" />
+              </svg>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#75694d]">{era.range}</span>
+            </div>
+            <h3 className="serif text-[19px] font-medium leading-tight text-[#1b2f37]">{era.title}</h3>
+            <p className="mt-2 max-w-[200px] text-[12.5px] leading-relaxed text-[#3b3528]">{era.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function TrustLogo({ name, sub, style }: { name: string; sub: string; style: 'script' | 'caps' | 'stack' }) {
+  if (style === 'script') {
+    return (
+      <div className="text-center">
+        <div className="text-[26px] leading-none text-[#1b2f37]" style={{ fontFamily: "'Caveat', cursive", fontWeight: 600 }}>
+          {name}
+        </div>
+        <div className="mt-1 text-[9px] uppercase tracking-[0.26em] text-[#75694d]">{sub}</div>
+      </div>
+    )
+  }
+  if (style === 'stack') {
+    return (
+      <div className="text-center">
+        <div className="serif text-[16px] font-medium uppercase tracking-[0.12em] leading-none text-[#1b2f37]">
+          {name}
+        </div>
+        <div className="serif mt-0.5 text-[16px] font-medium uppercase tracking-[0.12em] leading-none text-[#1b2f37]">
+          {sub}
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="text-center">
+      <div className="serif text-[16px] font-medium uppercase tracking-[0.16em] text-[#1b2f37]">
+        {name}
+      </div>
+      <div className="mt-0.5 text-[9px] uppercase tracking-[0.26em] text-[#75694d]">{sub}</div>
+    </div>
+  )
+}
+
+function RestaurantCard({ title, body, icon }: { title: string; body: string; icon: React.ReactNode }) {
+  return (
+    <div className="feature-card rounded-lg p-4 text-center">
+      <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center text-[#1b2f37]">{icon}</div>
+      <h4 className="serif text-[15px] font-medium leading-tight text-[#1b2f37]">{title}</h4>
+      <p className="mt-2 text-[12px] leading-snug text-[#3b3528]">{body}</p>
+    </div>
+  )
+}
+
+function PhoneIcon() {
+  return (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      {/* rotary phone */}
+      <rect x="10" y="22" width="28" height="14" rx="2" />
+      <rect x="14" y="14" width="20" height="10" rx="5" />
+      <circle cx="24" cy="29" r="4" />
+      <circle cx="24" cy="29" r="1.4" fill="currentColor" />
+      <path d="M10 36 q-3 6 4 6 h20 q7 0 4 -6" />
+    </svg>
+  )
+}
+
+function BellIcon() {
+  return (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      {/* hotel bell */}
+      <path d="M10 32 q14 -22 28 0" />
+      <line x1="8" y1="34" x2="40" y2="34" />
+      <line x1="24" y1="12" x2="24" y2="10" />
+      <circle cx="24" cy="9" r="1.6" fill="currentColor" />
+      <line x1="8" y1="38" x2="40" y2="38" />
+    </svg>
+  )
+}
+
+function EnvelopeIcon() {
+  return (
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="8" y="14" width="32" height="22" rx="1.5" />
+      <path d="M8 16 L24 28 L40 16" />
+      {/* heart */}
+      <path d="M24 22 q-2 -3 -4 -1 q-2 2 4 6 q6 -4 4 -6 q-2 -2 -4 1 z" fill="currentColor" opacity="0.8" />
+    </svg>
+  )
+}
+
+function SocialIcon({ kind }: { kind: 'facebook' | 'instagram' | 'linkedin' }) {
+  const paths = {
+    facebook: <path d="M22 12c0-5.5-4.5-10-10-10S2 6.5 2 12c0 5 3.7 9.1 8.4 9.9v-7H8v-2.9h2.4V9.8c0-2.4 1.4-3.7 3.6-3.7 1 0 2.1.2 2.1.2v2.3h-1.2c-1.2 0-1.5.7-1.5 1.5v1.8H16l-.4 2.9h-2.2v7C18.3 21.1 22 17 22 12z" fill="currentColor" />,
+    instagram: <g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17" cy="7" r="1" fill="currentColor" /></g>,
+    linkedin: <g fill="currentColor"><rect x="2" y="9" width="4" height="12" /><circle cx="4" cy="4" r="2" /><path d="M9 9h4v2c.7-1.2 2.2-2.3 4-2.3 3.2 0 4 2 4 4.5V21h-4v-6c0-1.4-.5-2.3-1.8-2.3-1.4 0-2.2 1-2.2 2.3v6H9z" /></g>,
+  }
+  return (
+    <a href="#" className="flex h-9 w-9 items-center justify-center rounded-full border border-[#cdbf9f] text-[#75694d] transition hover:border-[#c08c4a] hover:text-[#1b2f37]" aria-label={kind}>
+      <svg className="h-4 w-4" viewBox="0 0 24 24">{paths[kind]}</svg>
+    </a>
   )
 }
