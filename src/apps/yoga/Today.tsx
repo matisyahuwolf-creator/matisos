@@ -1,213 +1,223 @@
 import { useMemo, useState } from 'react'
 import { storage } from '../../lib/storage'
 import { sessions, type Session } from './sessions'
-import { phaseFor, phaseStartWeek, tracks } from './tracks'
+import {
+  ACTIVE_TRACK_KEY,
+  loadActiveTrack,
+  phaseFor,
+  phaseStartWeek,
+  tracks,
+} from './tracks'
 import SessionRunner from './SessionRunner'
 import { historyStats, loadHistory } from './history'
-import { SKILLS, loadSkillPoints, skillsForPose, type SkillId } from './skills'
 
-type ActiveTrackState = {
-  trackId: string
-  startedAt: number
-  currentWeek: number
-}
-
-function loadActive(): ActiveTrackState | null {
-  const raw = storage.get('yoga:track-v1')
-  if (!raw) return null
-  try {
-    return JSON.parse(raw) as ActiveTrackState
-  } catch {
-    return null
-  }
-}
-
-function greeting(): string {
-  const h = new Date().getHours()
-  if (h < 5) return 'Late night'
-  if (h < 12) return 'Good morning'
-  if (h < 17) return 'Good afternoon'
-  return 'Good evening'
-}
-
-function dateLabel(): string {
-  return new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  })
-}
-
-function pickByTimeOfDay(): Session {
-  const h = new Date().getHours()
-  let id: string
-  if (h >= 5 && h < 11) id = 'morning'
-  else if (h >= 11 && h < 17) id = 'stress-release'
-  else if (h >= 17 && h < 21) id = 'hip-release'
-  else id = 'pre-sleep'
-  return sessions.find((s) => s.id === id) ?? sessions[0]
-}
-
-export type TabKey =
-  | 'today'
-  | 'coach'
-  | 'skills'
-  | 'programs'
-  | 'sessions'
-  | 'library'
+export type TabKey = 'today' | 'path' | 'library' | 'coach' | 'more'
 
 type TodayProps = {
-  stats: { working: number; mastered: number; library: number }
   onSwitchTab: (tab: TabKey) => void
 }
 
-export default function Today({ stats, onSwitchTab }: TodayProps) {
+// The Matis Path is the canonical app-wide track. Today centers on it.
+const PATH_TRACK_ID = 'matis-path'
+
+// Per-weekday accent colors for the 7-day completion strip. Rotates through
+// the modality palette so each day reads as its own little stamp.
+const DAY_COLORS = [
+  'bg-emerald-500', // Mon
+  'bg-fuchsia-500', // Tue
+  'bg-orange-500',  // Wed
+  'bg-slate-800',   // Thu
+  'bg-sky-500',     // Fri
+  'bg-violet-500',  // Sat
+  'bg-rose-500',    // Sun
+]
+
+function startOfWeekMonday(d: Date): Date {
+  const out = new Date(d)
+  const dow = out.getDay() // 0=Sun ... 6=Sat
+  // Convert to Mon=0..Sun=6
+  const offset = (dow + 6) % 7
+  out.setDate(out.getDate() - offset)
+  out.setHours(0, 0, 0, 0)
+  return out
+}
+
+function formatDuration(sec: number): string {
+  if (sec < 60) return `${sec}s`
+  const min = Math.round(sec / 60)
+  if (min < 60) return `${min}m`
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return m === 0 ? `${h}h` : `${h}h ${m}m`
+}
+
+function getTodaysFlowSession(phaseSessionId: string): Session | undefined {
+  return sessions.find((s) => s.id === phaseSessionId)
+}
+
+export default function Today({ onSwitchTab }: TodayProps) {
   const [running, setRunning] = useState<Session | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const active = useMemo(loadActive, [])
+  // Reload active track & history each refresh
+  const active = useMemo(loadActiveTrack, [refreshKey])
   const track = useMemo(
-    () => (active ? tracks.find((t) => t.id === active.trackId) ?? null : null),
-    [active],
+    () => tracks.find((t) => t.id === PATH_TRACK_ID) ?? null,
+    [],
   )
   const phase = useMemo(
     () => (track && active ? phaseFor(track, active.currentWeek) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [track, active],
   )
 
-  const WEEK_MS = 7 * 24 * 60 * 60 * 1000
-  const weeklyProgress = useMemo(() => {
-    if (!phase) return null
+  // Today's session — first weeklyMix entry of the current phase, or the
+  // Foundation session if not started yet.
+  const todaysSession = useMemo<Session | undefined>(() => {
+    const sid = phase?.weeklyMix[0]?.sessionId ?? 'path-foundation'
+    return getTodaysFlowSession(sid)
+  }, [phase])
+
+  // Week stats — completion days this week and total time
+  const week = useMemo(() => {
     const history = loadHistory()
-    const weekAgo = Date.now() - WEEK_MS
-    return phase.weeklyMix.map((mix) => {
-      const done = history.filter(
-        (h) => h.sessionId === mix.sessionId && h.completedAt >= weekAgo,
-      ).length
-      const session = sessions.find((s) => s.id === mix.sessionId)
-      return { mix, session, done }
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, refreshKey])
+    const monday = startOfWeekMonday(new Date())
+    const weekStart = monday.getTime()
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const todayIdx = (new Date().getDay() + 6) % 7
 
-  const pick = useMemo<Session>(() => {
-    if (weeklyProgress) {
-      const nextPending = weeklyProgress.find(
-        (w) => w.session && w.done < w.mix.perWeek,
+    // Per-day: did any session complete that day?
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const dStart = weekStart + i * 24 * 60 * 60 * 1000
+      const dEnd = dStart + 24 * 60 * 60 * 1000
+      const done = history.some(
+        (h) => h.completedAt >= dStart && h.completedAt < dEnd,
       )
-      if (nextPending?.session) return nextPending.session
-    }
-    return pickByTimeOfDay()
+      return { idx: i, done, isToday: i === todayIdx, isPast: i < todayIdx }
+    })
+    const doneCount = days.filter((d) => d.done).length
+    const weekSec = history
+      .filter((h) => h.completedAt >= weekStart)
+      .reduce((acc, h) => acc + h.durationSec, 0)
+    return { days, doneCount, weekSec, todayIdx }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weeklyProgress])
+  }, [refreshKey])
 
-  const allDone =
-    weeklyProgress?.every((w) => w.done >= w.mix.perWeek) ?? false
+  const stats = useMemo(historyStats, [refreshKey])
 
-  const reason = phase
-    ? allDone
-      ? 'You finished this week. Bonus if you want it.'
-      : `From your program · ${phase.name}`
-    : 'Matched to your time of day'
+  const phaseLabel = phase
+    ? `${phase.name} · Week ${
+        active && track
+          ? active.currentWeek - phaseStartWeek(track, phase.id) + 1
+          : 1
+      } of ${phase.weeks}`
+    : 'An 18-month daily program'
+
+  const daysPerWeek = phase?.weeklyMix[0]?.perWeek ?? 5
+
+  function startThePath() {
+    // Persist a new active track at week 1, then open today's session.
+    const state = {
+      trackId: PATH_TRACK_ID,
+      startedAt: Date.now(),
+      currentWeek: 1,
+    }
+    storage.set(ACTIVE_TRACK_KEY, JSON.stringify(state))
+    setRefreshKey((k) => k + 1)
+    if (todaysSession) setRunning(todaysSession)
+  }
+
+  function beginToday() {
+    if (!active) {
+      startThePath()
+      return
+    }
+    if (todaysSession) setRunning(todaysSession)
+  }
 
   return (
-    <div className="flex flex-col gap-4">
-      <header className="px-1">
-        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
-          {dateLabel()}
+    <div className="flex flex-col gap-7 pb-6">
+      {/* Headline ─────────────────────────────────────────────────────── */}
+      <header className="flex flex-col gap-2 px-1 pt-3">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+          The Matis Path
         </p>
-        <h2 className="mt-0.5 text-2xl font-bold text-slate-900">
-          {greeting()}.
-        </h2>
+        <h1 className="font-display text-[44px] leading-[0.95] tracking-tight text-slate-900 sm:text-[52px]">
+          The <span className="italic">Matis</span> Path
+        </h1>
+        <p className="text-[14px] leading-snug text-slate-500">{phaseLabel}</p>
       </header>
 
-      {track && active && phase && (
-        <button
-          onClick={() => onSwitchTab('programs')}
-          className={`overflow-hidden rounded-xl bg-gradient-to-br ${track.gradient} p-4 text-left text-white shadow-sm transition-transform active:scale-[0.99]`}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/85">
-                {phase.name} · Week{' '}
-                {active.currentWeek - phaseStartWeek(track, phase.id) + 1} of{' '}
-                {phase.weeks}
-              </p>
-              <h4 className="truncate text-base font-bold leading-tight">
-                {track.name}
-              </h4>
-            </div>
-            <span className="shrink-0 text-2xl">{track.icon}</span>
-          </div>
-          <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/15">
-            <div
-              className="h-full bg-white/85"
-              style={{
-                width: `${(active.currentWeek / track.totalWeeks) * 100}%`,
-              }}
-            />
-          </div>
-          <p className="mt-1.5 text-[11px] text-white/75">
-            Week {active.currentWeek} of {track.totalWeeks} · tap for roadmap
-          </p>
-        </button>
-      )}
-
+      {/* Hero card — Today's Flow ─────────────────────────────────────── */}
       <button
-        onClick={() => setRunning(pick)}
-        className={`psychedelic-shimmer w-full overflow-hidden rounded-[22px] bg-gradient-to-br ${pick.gradient} p-6 text-left text-white shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)] press hover:brightness-105 active:scale-[0.99]`}
+        onClick={beginToday}
+        className="group relative aspect-square w-full overflow-hidden rounded-[28px] text-white shadow-[0_24px_60px_-24px_rgba(180,40,120,0.55)] transition active:scale-[0.99]"
+        style={{
+          background:
+            'linear-gradient(135deg, #FF8A3D 0%, #FF5A6E 32%, #E64BA0 60%, #8B3FD8 100%)',
+        }}
       >
-        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/80">
-          {reason}
-        </p>
-        <div className="mt-3 flex items-start gap-3">
-          <span className="text-4xl">{pick.icon}</span>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/85">
-              {pick.focus} · {pick.durationMin} min · {pick.difficulty}
-            </p>
-            <h3 className="mt-0.5 text-2xl font-bold leading-tight">
-              {pick.name}
-            </h3>
-          </div>
-        </div>
-        <p className="mt-3 text-[13px] leading-relaxed text-white/85">
-          {pick.description}
-        </p>
-        <div className="mt-4 flex items-center justify-between rounded-xl bg-white/15 px-4 py-3 backdrop-blur">
-          <span className="text-[13px] font-bold uppercase tracking-[0.12em]">
-            Tap to begin
-          </span>
-          <span className="text-lg">▶</span>
+        {/* Soft inner highlight */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-50"
+          style={{
+            background:
+              'radial-gradient(120% 80% at 25% 18%, rgba(255,255,255,0.35) 0%, transparent 55%)',
+          }}
+        />
+        <div className="relative flex h-full flex-col items-center justify-center gap-5 px-6 text-center">
+          <h2 className="font-display text-[44px] font-medium italic leading-none drop-shadow-sm sm:text-[52px]">
+            Today's Flow
+          </h2>
+          <span className="block h-1 w-1 rounded-full bg-white/70" />
+          <p className="text-[20px] font-light tracking-tight">
+            {todaysSession?.durationMin ?? 20} min
+          </p>
+          <span className="block h-1 w-1 rounded-full bg-white/70" />
+          <p className="text-[26px] font-display font-medium italic">
+            {active ? 'Begin →' : 'Begin the Path →'}
+          </p>
         </div>
       </button>
 
-      {weeklyProgress && weeklyProgress.length > 0 && (
-        <>
-          <WeeklySchedule
-            rows={weeklyProgress}
-            onPickSession={(s) => setRunning(s)}
-          />
-          <ThisWeekSkills rows={weeklyProgress} />
-        </>
-      )}
+      {/* This week ────────────────────────────────────────────────────── */}
+      <section className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between px-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+            This Week
+          </p>
+          <p className="text-[12px] font-medium text-slate-500">
+            {week.doneCount} of {daysPerWeek} days done
+          </p>
+        </div>
 
-      <PracticeDashboard />
+        <DayStrip days={week.days} />
+      </section>
 
-      <div className="flex items-stretch rounded-xl bg-white px-2 py-3 ring-1 ring-black/5">
-        <StatBlock value={stats.working} label="Working on" />
-        <Divider />
-        <StatBlock value={stats.mastered} label="Mastered" />
-        <Divider />
-        <StatBlock value={stats.library} label="In Library" />
-      </div>
+      {/* Stats card ───────────────────────────────────────────────────── */}
+      <section className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.06]">
+        <StatRow
+          icon={<SpiralIcon />}
+          label="Current streak"
+          value={`${stats.streak} ${stats.streak === 1 ? 'day' : 'days'}`}
+        />
+        <div className="h-px bg-slate-100" />
+        <StatRow
+          icon={<ClockIcon />}
+          label="Total time this week"
+          value={week.weekSec > 0 ? formatDuration(week.weekSec) : '—'}
+        />
+      </section>
 
-      {!active && (
+      {/* Tap-through to Path ─────────────────────────────────────────── */}
+      {active && (
         <button
-          onClick={() => onSwitchTab('programs')}
-          className="self-start rounded-full bg-slate-900 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-slate-800"
+          onClick={() => onSwitchTab('path')}
+          className="self-center text-[12px] font-medium uppercase tracking-[0.18em] text-slate-400 transition hover:text-slate-700"
         >
-          Start a flexibility program →
+          See the full path →
         </button>
       )}
 
@@ -224,262 +234,139 @@ export default function Today({ stats, onSwitchTab }: TodayProps) {
   )
 }
 
-function WeeklySchedule({
-  rows,
-  onPickSession,
+// ─── Day strip ────────────────────────────────────────────────────────
+function DayStrip({
+  days,
 }: {
-  rows: Array<{
-    mix: { sessionId: string; perWeek: number }
-    session: Session | undefined
-    done: number
-  }>
-  onPickSession: (s: Session) => void
+  days: { idx: number; done: boolean; isToday: boolean; isPast: boolean }[]
 }) {
-  const totalNeeded = rows.reduce((acc, r) => acc + r.mix.perWeek, 0)
-  const totalDone = rows.reduce(
-    (acc, r) => acc + Math.min(r.done, r.mix.perWeek),
-    0,
-  )
-  const nextPendingIndex = rows.findIndex(
-    (r) => r.done < r.mix.perWeek && r.session,
-  )
+  const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
   return (
-    <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/5">
-      <div className="flex items-baseline justify-between border-b border-slate-100 px-4 py-3">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-            This week's schedule
-          </p>
-          <h3 className="mt-0.5 font-display text-[20px] italic text-slate-900">
-            {totalDone} of {totalNeeded} done
-          </h3>
-        </div>
-        <div className="text-right">
-          <p className="text-[20px] font-bold text-slate-900">
-            {totalNeeded - totalDone}
-          </p>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-            to go
-          </p>
-        </div>
+    <div className="flex flex-col gap-3 px-1">
+      <div className="flex items-end justify-between gap-2">
+        {days.map((d, i) => (
+          <div key={i} className="flex flex-1 flex-col items-center gap-2">
+            <span
+              className={`text-[11px] font-semibold ${
+                d.isToday ? 'text-slate-900' : 'text-slate-400'
+              }`}
+            >
+              {labels[i]}
+            </span>
+            <DayDot day={d} />
+          </div>
+        ))}
       </div>
-      <ul className="divide-y divide-slate-100">
-        {rows.map((row, i) => {
-          if (!row.session) return null
-          const isDone = row.done >= row.mix.perWeek
-          const isNext = i === nextPendingIndex
-          const remaining = Math.max(0, row.mix.perWeek - row.done)
-          return (
-            <li key={row.mix.sessionId}>
-              <button
-                onClick={() => row.session && onPickSession(row.session)}
-                disabled={!row.session}
-                className={`flex w-full items-center gap-3 px-4 py-3 text-left press ${
-                  isNext
-                    ? 'bg-amber-50/60 hover:bg-amber-50'
-                    : isDone
-                      ? 'bg-emerald-50/40 hover:bg-emerald-50/60'
-                      : 'hover:bg-slate-50'
-                }`}
-              >
-                <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${row.session.gradient} text-lg`}
-                >
-                  <span>{row.session.icon}</span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p
-                      className={`truncate text-[14px] font-semibold ${
-                        isDone ? 'text-slate-600' : 'text-slate-900'
-                      }`}
-                    >
-                      {row.session.name}
-                    </p>
-                    {isNext && (
-                      <span className="shrink-0 rounded-full bg-amber-200 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-900">
-                        Next
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    {row.session.durationMin} min ·{' '}
-                    {isDone
-                      ? `done ${row.done}×`
-                      : `${row.done}/${row.mix.perWeek} this week`}
-                  </p>
-                </div>
-                {isDone ? (
-                  <span
-                    className="shrink-0 text-emerald-600"
-                    aria-label="completed"
-                  >
-                    <svg width="22" height="22" viewBox="0 0 22 22">
-                      <path
-                        d="M5 11l4 4 8-8"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
-                ) : (
-                  <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    {remaining}× left
-                  </span>
-                )}
-              </button>
-            </li>
-          )
-        })}
-      </ul>
+      {/* Rainbow progression rule */}
+      <div
+        className="h-[2px] rounded-full"
+        style={{
+          background:
+            'linear-gradient(90deg, #10b981 0%, #d946ef 20%, #f97316 40%, #1e293b 60%, #0ea5e9 80%, #8b5cf6 100%)',
+        }}
+      />
     </div>
   )
 }
 
-function StatBlock({ value, label }: { value: number; label: string }) {
+function DayDot({
+  day,
+}: {
+  day: { idx: number; done: boolean; isToday: boolean; isPast: boolean }
+}) {
+  if (day.done) {
+    return (
+      <span
+        className={`flex h-7 w-7 items-center justify-center rounded-full ${DAY_COLORS[day.idx]}`}
+        aria-label="completed"
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+          <path
+            d="M3 7L6 10L11 4"
+            fill="none"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+    )
+  }
+  if (day.isToday) {
+    return (
+      <span
+        className="flex h-7 w-7 items-center justify-center rounded-full border-[2px] border-sky-500"
+        aria-label="today"
+      />
+    )
+  }
   return (
-    <div className="flex-1 text-center">
-      <p className="text-xl font-bold text-slate-900">{value}</p>
-      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-        {label}
+    <span
+      className="flex h-7 w-7 items-center justify-center rounded-full border-[1.5px] border-slate-200"
+      aria-label="empty"
+    />
+  )
+}
+
+// ─── Stat row ────────────────────────────────────────────────────────
+function StatRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+      <div className="flex items-center gap-3">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+          {icon}
+        </span>
+        <p className="text-[14px] font-medium text-slate-700">{label}</p>
+      </div>
+      <p className="text-[14px] font-semibold tabular-nums text-slate-900">
+        {value}
       </p>
     </div>
   )
 }
 
-function Divider() {
-  return <div className="self-center h-8 w-px bg-slate-200" />
-}
-
-function totalPoints(pts: Partial<Record<SkillId, number>>): number {
-  return Object.values(pts).reduce((a, b) => a + (b ?? 0), 0)
-}
-
-function PracticeDashboard() {
-  const history = useMemo(loadHistory, [])
-  if (history.length === 0) return null
-  const stats = historyStats(history)
-  const totalMin = Math.round(stats.totalSec / 60)
-  const points = totalPoints(loadSkillPoints())
-  const last = stats.lastAt ? new Date(stats.lastAt) : null
-  function lastLabel(d: Date): string {
-    const diff = Date.now() - d.getTime()
-    const day = 24 * 60 * 60 * 1000
-    if (diff < day && d.toDateString() === new Date().toDateString()) {
-      return 'today'
-    }
-    if (diff < 2 * day) return 'yesterday'
-    return d.toLocaleDateString('en-US', { weekday: 'long' })
-  }
+function SpiralIcon() {
   return (
-    <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/5">
-      <div className="border-b border-slate-100 px-4 py-3">
-        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-          Practice
-        </p>
-        <h3 className="mt-0.5 font-display text-[20px] italic text-slate-900">
-          You showed up {stats.total} {stats.total === 1 ? 'time' : 'times'}.
-        </h3>
-      </div>
-      <div className="grid grid-cols-3 divide-x divide-slate-100">
-        <DashStat value={stats.thisWeek} label="this week" />
-        <DashStat value={stats.streak} label="day streak" />
-        <DashStat value={points} label="skill points" />
-      </div>
-      <div className="border-t border-slate-100 bg-slate-50 px-4 py-2.5 text-[12px] text-slate-600">
-        Total · {totalMin} min across {stats.total} sessions
-        {last && ` · Last: ${lastLabel(last)}`}
-      </div>
-    </div>
+    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden>
+      <path
+        d="M8 14a6 6 0 11.001-11.999A4.5 4.5 0 0112.5 6.5 3 3 0 019.5 9.5 1.5 1.5 0 018 8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
   )
 }
 
-function DashStat({ value, label }: { value: number | string; label: string }) {
+function ClockIcon() {
   return (
-    <div className="px-3 py-3 text-center">
-      <p className="text-2xl font-bold leading-none text-slate-900">{value}</p>
-      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-        {label}
-      </p>
-    </div>
-  )
-}
-
-function ThisWeekSkills({
-  rows,
-}: {
-  rows: Array<{
-    mix: { sessionId: string; perWeek: number }
-    session: Session | undefined
-    done: number
-  }>
-}) {
-  const projection: Partial<Record<SkillId, number>> = {}
-  for (const row of rows) {
-    if (!row.session) continue
-    for (const step of row.session.steps) {
-      const ps = skillsForPose(step.poseId)
-      for (const [id, pts] of Object.entries(ps)) {
-        projection[id as SkillId] =
-          (projection[id as SkillId] ?? 0) + (pts ?? 0) * row.mix.perWeek
-      }
-    }
-  }
-  const top = (Object.entries(projection) as [SkillId, number][])
-    .filter(([, p]) => p > 0)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 6)
-  if (top.length === 0) return null
-  const max = top[0][1]
-  return (
-    <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/5">
-      <div className="border-b border-slate-100 px-4 py-3">
-        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-          This week you're building
-        </p>
-        <h3 className="mt-0.5 font-display text-[20px] italic text-slate-900">
-          {top.length} skills through these poses
-        </h3>
-        <p className="mt-1 text-[12px] leading-snug text-slate-500">
-          What you'll gain physically if you complete all the planned sessions this week.
-        </p>
-      </div>
-      <ul className="divide-y divide-slate-100">
-        {top.map(([id, pts]) => {
-          const meta = SKILLS[id]
-          const pct = Math.min(100, (pts / max) * 100)
-          return (
-            <li key={id} className="flex items-center gap-3 px-4 py-2.5">
-              <span
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-lg ${meta.bg}`}
-              >
-                {meta.emoji}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="truncate text-[14px] font-semibold text-slate-900">
-                    {meta.name}
-                  </p>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${meta.bg} ${meta.text}`}
-                  >
-                    +{pts} pts
-                  </span>
-                </div>
-                <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className={`h-full rounded-full ${meta.bg.replace('100', '400')}`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </div>
-            </li>
-          )
-        })}
-      </ul>
-    </div>
+    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden>
+      <circle
+        cx="8"
+        cy="8"
+        r="6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+      />
+      <path
+        d="M8 4.5V8L10.5 9.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }

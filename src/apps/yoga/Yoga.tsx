@@ -194,39 +194,34 @@ export default function Yoga() {
 
   const filters: FilterDifficulty[] = ['All', 'Beginner', 'Intermediate', 'Advanced']
   const [tab, setTab] = useState<TabKey>('today')
+  const [libraryView, setLibraryView] = useState<'sessions' | 'moves'>('sessions')
 
-  const modalityScopedTab =
-    tab === 'library' || tab === 'sessions' || tab === 'programs'
+  const modalityScopedTab = tab === 'library' || tab === 'path'
 
   return (
-    <div className="flex flex-col gap-5">
-      <TabBar value={tab} onChange={setTab} />
-
+    <div className="flex flex-col gap-6 pb-28">
       {modalityScopedTab && (
-        <ModalityBar value={modality} onChange={setModality} />
+        <ModalityTiles value={modality} onChange={setModality} />
       )}
 
-      {tab === 'today' && (
-        <Today
-          stats={{
-            working: learning.length,
-            mastered: mastered.length,
-            library: library.length,
-          }}
-          onSwitchTab={setTab}
-        />
-      )}
+      {tab === 'today' && <Today onSwitchTab={setTab} />}
 
       {tab === 'coach' && <Coach />}
 
-      {tab === 'skills' && <SkillsView />}
+      {tab === 'more' && <SkillsView />}
 
-      {tab === 'programs' && <TracksView modality={modality} />}
+      {tab === 'path' && <TracksView modality={modality} />}
 
-      {tab === 'sessions' && <SessionsView modality={modality} />}
+      {tab === 'library' && libraryView === 'sessions' && (
+        <div className="flex flex-col gap-4">
+          <LibrarySubToggle value={libraryView} onChange={setLibraryView} />
+          <SessionsView modality={modality} />
+        </div>
+      )}
 
-      {tab === 'library' && (
-        <div className="flex flex-col gap-6">
+      {tab === 'library' && libraryView === 'moves' && (
+        <div className="flex flex-col gap-4">
+          <LibrarySubToggle value={libraryView} onChange={setLibraryView} />
           <div className="flex gap-2">
             <input
               type="text"
@@ -235,7 +230,7 @@ export default function Yoga() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') addCustomPose()
               }}
-              placeholder="Add a custom pose…"
+              placeholder={`Add a custom ${MODALITIES[modality].unitSingular}…`}
               className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[15px] outline-none transition focus:border-[#0071e3]"
             />
             <button
@@ -341,17 +336,23 @@ export default function Yoga() {
       )}
 
       <FloatingChat />
+      <TabBar value={tab} onChange={setTab} />
     </div>
   )
 }
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'today', label: 'Today' },
-  { key: 'coach', label: 'Begin' },
-  { key: 'skills', label: 'Skills' },
-  { key: 'programs', label: 'Programs' },
-  { key: 'sessions', label: 'Sessions' },
-  { key: 'library', label: 'Library' },
+// ─── Bottom tab bar ──────────────────────────────────────────────────
+// Floating pill at the bottom of the viewport. Five tabs with icon + label.
+// Inspired by the iOS app-bar pattern; matches the editorial-minimal mockup.
+
+type TabDef = { key: TabKey; label: string; icon: React.ReactNode }
+
+const TABS: TabDef[] = [
+  { key: 'today', label: 'Today', icon: <SunriseIcon /> },
+  { key: 'path', label: 'Path', icon: <PathIcon /> },
+  { key: 'library', label: 'Library', icon: <BooksIcon /> },
+  { key: 'coach', label: 'Coach', icon: <PersonIcon /> },
+  { key: 'more', label: 'More', icon: <DotsIcon /> },
 ]
 
 function TabBar({
@@ -362,25 +363,52 @@ function TabBar({
   onChange: (k: TabKey) => void
 }) {
   return (
-    <div className="flex gap-1 rounded-full bg-slate-200/70 p-1">
-      {TABS.map((t) => (
-        <button
-          key={t.key}
-          onClick={() => onChange(t.key)}
-          className={`flex-1 rounded-full px-2 py-1.5 text-[12px] font-semibold press sm:text-[13px] ${
-            value === t.key
-              ? 'bg-white text-slate-900 shadow-[0_1px_3px_rgba(15,23,42,0.08),0_1px_2px_rgba(15,23,42,0.06)]'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          {t.label}
-        </button>
-      ))}
-    </div>
+    <nav
+      className="pointer-events-none fixed inset-x-0 bottom-3 z-40 flex justify-center px-4 sm:bottom-5"
+      aria-label="Primary"
+    >
+      <div className="pointer-events-auto flex w-full max-w-md items-stretch justify-between gap-1 rounded-[28px] bg-white/90 px-2 py-2 shadow-[0_18px_44px_-18px_rgba(15,23,42,0.35)] ring-1 ring-black/[0.06] backdrop-blur">
+        {TABS.map((t) => {
+          const isActive = t.key === value
+          return (
+            <button
+              key={t.key}
+              onClick={() => onChange(t.key)}
+              aria-current={isActive ? 'page' : undefined}
+              className={`flex flex-1 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 transition ${
+                isActive
+                  ? 'text-slate-900'
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              <span
+                className={`flex h-6 w-6 items-center justify-center ${
+                  isActive ? 'opacity-100' : 'opacity-70'
+                }`}
+              >
+                {t.icon}
+              </span>
+              <span
+                className={`text-[10px] tracking-tight ${
+                  isActive ? 'font-semibold' : 'font-medium'
+                }`}
+              >
+                {t.label}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </nav>
   )
 }
 
-function ModalityBar({
+// ─── Modality tiles ──────────────────────────────────────────────────
+// Six tiles in a horizontal row, each a small gradient block with an icon
+// and an all-caps label. Replaces the earlier pill bar. Visual identity
+// per modality lives in the gradient + icon.
+
+function ModalityTiles({
   value,
   onChange,
 }: {
@@ -389,30 +417,134 @@ function ModalityBar({
 }) {
   const active = MODALITIES[value]
   return (
-    <div className="flex flex-col gap-2">
-      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
-        {MODALITY_LIST.map((m) => {
-          const isActive = m.id === value
-          return (
-            <button
-              key={m.id}
-              onClick={() => onChange(m.id)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold press transition ${
-                isActive
-                  ? `bg-gradient-to-br ${m.gradient} text-white shadow-[0_4px_12px_-4px_rgba(0,0,0,0.25)]`
-                  : 'bg-white text-slate-700 ring-1 ring-black/5 hover:bg-slate-50'
-              }`}
-            >
-              <span className="mr-1">{m.icon}</span>
-              {m.name}
-            </button>
-          )
-        })}
+    <section className="flex flex-col gap-3">
+      <div className="overflow-hidden rounded-2xl bg-white p-2 ring-1 ring-black/[0.06]">
+        <div className="flex gap-2 overflow-x-auto">
+          {MODALITY_LIST.map((m) => {
+            const isActive = m.id === value
+            return (
+              <button
+                key={m.id}
+                onClick={() => onChange(m.id)}
+                className={`group flex min-w-[68px] flex-1 flex-col items-center gap-1.5 rounded-xl p-1.5 transition ${
+                  isActive ? 'bg-slate-50' : 'hover:bg-slate-50'
+                }`}
+              >
+                <span
+                  className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${m.gradient} text-2xl text-white shadow-[0_6px_14px_-6px_rgba(0,0,0,0.4)] transition ${
+                    isActive ? 'scale-100' : 'scale-[0.94] opacity-90 group-hover:opacity-100'
+                  }`}
+                >
+                  {m.icon}
+                </span>
+                <span
+                  className={`text-[9px] font-bold uppercase tracking-[0.12em] ${
+                    isActive ? 'text-slate-900' : 'text-slate-500'
+                  }`}
+                >
+                  {m.name}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
-      <p className="px-2 text-[11px] italic text-slate-500">
-        {active.tagline}
-      </p>
+      <p className="px-2 text-[12px] italic text-slate-500">{active.tagline}</p>
+    </section>
+  )
+}
+
+function LibrarySubToggle({
+  value,
+  onChange,
+}: {
+  value: 'sessions' | 'moves'
+  onChange: (v: 'sessions' | 'moves') => void
+}) {
+  const opts: { key: 'sessions' | 'moves'; label: string }[] = [
+    { key: 'sessions', label: 'Sessions' },
+    { key: 'moves', label: 'Moves' },
+  ]
+  return (
+    <div className="flex gap-1 self-start rounded-full bg-slate-100 p-1">
+      {opts.map((o) => (
+        <button
+          key={o.key}
+          onClick={() => onChange(o.key)}
+          className={`rounded-full px-3.5 py-1 text-[12px] font-semibold transition ${
+            value === o.key
+              ? 'bg-white text-slate-900 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
     </div>
+  )
+}
+
+// ─── Tab bar icons ───────────────────────────────────────────────────
+function SunriseIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="13" r="4" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M3 18h18M5.5 13.5l-1.5-1m17 1l-1.5-1.5M12 5V3m4 3l1.5-2M8 6L6.5 4"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function PathIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 19c4-2 4-7 8-9s4-5 8-7"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <circle cx="4.2" cy="19" r="1.2" fill="currentColor" />
+      <circle cx="20" cy="3.2" r="1.2" fill="currentColor" />
+    </svg>
+  )
+}
+
+function BooksIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="4" y="4" width="3.5" height="16" rx="0.5" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="10.25" y="4" width="3.5" height="16" rx="0.5" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="16.5" y="4" width="3.5" height="16" rx="0.5" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+function PersonIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M4.5 20c1.4-3.5 4.4-5.2 7.5-5.2s6.1 1.7 7.5 5.2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function DotsIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="5.5" cy="12" r="1.4" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.4" fill="currentColor" />
+      <circle cx="18.5" cy="12" r="1.4" fill="currentColor" />
+    </svg>
   )
 }
 
