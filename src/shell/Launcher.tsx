@@ -936,13 +936,11 @@ export default function Launcher() {
   const tiles = liveApps.slice(0, 16)
 
   return (
-    <div className="fixed inset-0 grid place-items-center overflow-auto bg-[#0d0805]">
+    <div className="fixed inset-0 overflow-hidden bg-[#0d0805]">
       <Style />
       <div
-        className="relative"
+        className="relative h-full w-full"
         style={{
-          width: `min(100vw, calc(100vh * ${ASPECT}))`,
-          aspectRatio: String(ASPECT),
           containerType: 'inline-size',
           background:
             'radial-gradient(ellipse at 8% 20%, rgba(255,180,80,0.18), transparent 35%),' +
