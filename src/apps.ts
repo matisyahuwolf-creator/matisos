@@ -3,6 +3,7 @@ import Cadence from './apps/cadence/Cadence'
 import Hyrogliphics from './apps/hyrogliphics/Hyrogliphics'
 import Initiation from './apps/initiation/Initiation'
 import Pardes from './apps/pardes/Pardes'
+import Renaissance from './apps/renaissance/Renaissance'
 import Scratch from './apps/scratch/Scratch'
 import Susquehanna from './apps/susquehanna/Susquehanna'
 import Yoga from './apps/yoga/Yoga'
@@ -60,6 +61,19 @@ export const apps: AppEntry[] = [
     gradient: 'from-stone-200 via-stone-300 to-stone-500',
     category: 'Tools',
     component: Initiation,
+  },
+  {
+    kind: 'internal',
+    slug: 'renaissance',
+    name: 'Renaissance',
+    tagline: 'Chat with history.',
+    description:
+      'AI-native education. Eight historical figures, each grounded in their own writings and the world they actually lived in — and nothing past their death.',
+    icon: '✦',
+    status: 'live',
+    gradient: 'from-amber-600 via-rose-600 to-indigo-700',
+    category: 'Tools',
+    component: Renaissance,
   },
   {
     kind: 'internal',

@@ -2,9 +2,28 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { storage } from '../../lib/storage'
 import { chapters, allLessons } from './lessons'
 import type { Block, Lesson } from './lessons'
+import { extras } from './extras'
+import ProfileSetup from './ProfileSetup'
+import type { Profile } from './ProfileSetup'
+import Teacher from './Teacher'
 
 const PROGRESS_KEY = 'hyrogliphics:progress'
 const POSITION_KEY = 'hyrogliphics:position'
+const PROFILE_KEY = 'hyrogliphics:profile'
+
+function readProfile(): Profile | null {
+  const raw = storage.get(PROFILE_KEY)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as Profile
+  } catch {
+    return null
+  }
+}
+
+function writeProfile(p: Profile) {
+  storage.set(PROFILE_KEY, JSON.stringify(p))
+}
 
 function readProgress(): Record<string, boolean> {
   const raw = storage.get(PROGRESS_KEY)
@@ -51,11 +70,16 @@ export default function School({
     initialLesson ?? saved?.lesson ?? 0,
   )
   const [progress, setProgress] = useState<Record<string, boolean>>(readProgress)
+  const [profile, setProfile] = useState<Profile | null>(readProfile)
+  const [profileGate, setProfileGate] = useState<'first' | 'edit' | null>(() =>
+    readProfile() ? null : 'first',
+  )
   const [navOpen, setNavOpen] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const chapter = chapters[chapterIdx]
   const lesson: Lesson = chapter.lessons[lessonIdx]
+  const lessonExtras = extras[lesson.id] ?? null
 
   const flat = useMemo(allLessons, [])
   const flatIndex = flat.findIndex(
@@ -156,6 +180,14 @@ export default function School({
             <span className="hidden text-[11px] tracking-wide text-[#c9bf9d]/60 sm:inline">
               {completedCount}/{totalLessons} complete
             </span>
+            {profile && (
+              <button
+                onClick={() => setProfileGate('edit')}
+                className="hidden rounded-full border border-[#c9a14a]/25 px-3 py-1.5 text-[12px] tracking-wide text-[#e8dcc4]/85 transition hover:border-[#c9a14a]/60 hover:text-[#f3deaa] sm:inline-block"
+              >
+                {profile.name}
+              </button>
+            )}
             <button
               onClick={() => setNavOpen((o) => !o)}
               className="rounded-full border border-[#c9a14a]/25 px-3 py-1.5 text-[12px] tracking-wide text-[#e8dcc4]/85 transition hover:border-[#c9a14a]/60 hover:text-[#f3deaa] lg:hidden"
@@ -283,6 +315,50 @@ export default function School({
               ))}
             </div>
 
+            {/* Practice exercise */}
+            {lessonExtras && (
+              <section className="mt-12 overflow-hidden rounded-2xl border border-[#c9a14a]/25 bg-gradient-to-b from-[#1a1612] to-[#120e0a]">
+                <div className="border-b border-[#c9a14a]/15 px-5 py-4">
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-[#c9a14a]/80">
+                    Practice
+                  </p>
+                  <h3 className="mt-1.5 font-display text-[22px] font-semibold leading-tight text-[#f3deaa]">
+                    {lessonExtras.practice.title}
+                  </h3>
+                </div>
+                <div className="flex flex-col gap-4 px-5 py-5">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.22em] text-[#c9a14a]/70">
+                      What you make
+                    </p>
+                    <p className="mt-1 text-[14px] leading-relaxed text-[#e8dcc4]/90">
+                      {lessonExtras.practice.artifact}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.22em] text-[#c9a14a]/70">
+                      How
+                    </p>
+                    <p className="mt-1 text-[14px] leading-relaxed text-[#c9bf9d]">
+                      {lessonExtras.practice.brief}
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Teacher chat */}
+            {lessonExtras && (
+              <div className="mt-8">
+                <Teacher
+                  lessonId={lesson.id}
+                  teacher={lessonExtras.teacher}
+                  practice={lessonExtras.practice}
+                  profile={profile}
+                />
+              </div>
+            )}
+
             {/* Footer nav */}
             <div className="mt-14 flex items-center justify-between gap-3 border-t border-[#c9a14a]/15 pt-6">
               <button
@@ -327,6 +403,18 @@ export default function School({
           </article>
         </main>
       </div>
+
+      {profileGate && (
+        <ProfileSetup
+          initial={profile ?? undefined}
+          onSave={(p) => {
+            setProfile(p)
+            writeProfile(p)
+            setProfileGate(null)
+          }}
+          onSkip={profileGate === 'edit' ? () => setProfileGate(null) : () => setProfileGate(null)}
+        />
+      )}
     </div>
   )
 }

@@ -128,25 +128,29 @@ export default function LocalToday() {
     }
   }
 
+  // Shared shed-styled shell
+  const shell =
+    'overflow-hidden rounded-md border border-[#c9a14a]/25 bg-gradient-to-b from-[#1f130a] to-[#15100a] shadow-[inset_0_1px_0_rgba(201,161,74,0.12),0_2px_8px_rgba(0,0,0,0.4)] text-[#e8dcc4]'
+  const stencil =
+    "font-mono text-[10px] uppercase tracking-[0.22em] text-[#c9a14a]/75 font-bold"
+
   if (state.kind === 'idle') {
     return (
-      <div className="overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-black/5">
+      <div className={shell}>
         <div className="flex items-start gap-3 p-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-xl">
-            🌤️
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#c9a14a]/30 bg-[#0d0805]/60 text-lg">
+            🌤
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-semibold text-slate-900">
-              Weather & where to go
-            </p>
-            <p className="text-[12px] leading-snug text-slate-500">
-              Enable location to see your local weather and three places worth going today.
+            <p className={stencil}>the almanac</p>
+            <p className="mt-1 text-[12px] leading-snug text-[#c9bf9d]/75">
+              Local weather and three places worth going today. Needs your location.
             </p>
           </div>
         </div>
         <button
           onClick={enable}
-          className="w-full border-t border-slate-100 bg-slate-50 px-4 py-2.5 text-[13px] font-bold uppercase tracking-[0.14em] text-amber-700 press hover:bg-slate-100"
+          className={`${stencil} w-full border-t border-[#c9a14a]/15 bg-[#0d0805]/50 px-4 py-2.5 text-[#c9a14a] transition hover:bg-[#c9a14a]/10 hover:text-[#f3deaa]`}
         >
           Enable location
         </button>
@@ -156,28 +160,26 @@ export default function LocalToday() {
 
   if (state.kind === 'loading') {
     return (
-      <div className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-black/5">
-        <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-amber-400 [animation-delay:0ms]" />
-        <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-amber-400 [animation-delay:150ms]" />
-        <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-amber-400 [animation-delay:300ms]" />
-        <span className="text-[13px] text-slate-500">
-          Reading the day…
-        </span>
+      <div className={`${shell} flex items-center gap-3 p-4`}>
+        <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#c9a14a] [animation-delay:0ms]" />
+        <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#c9a14a] [animation-delay:150ms]" />
+        <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#c9a14a] [animation-delay:300ms]" />
+        <span className="text-[12px] text-[#c9bf9d]/75">reading the day…</span>
       </div>
     )
   }
 
   if (state.kind === 'denied' || state.kind === 'error') {
     return (
-      <div className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-black/5">
-        <p className="text-[13px] text-slate-600">
+      <div className={`${shell} p-4`}>
+        <p className="text-[12px] text-[#c9bf9d]/80">
           {state.kind === 'denied'
             ? "Location's off — that's fine."
             : `Couldn't load: ${'message' in state ? state.message : 'unknown'}`}
         </p>
         <button
           onClick={enable}
-          className="mt-2 text-[12px] font-semibold uppercase tracking-wider text-amber-700 hover:text-amber-900"
+          className={`${stencil} mt-2 text-[#c9a14a] hover:text-[#f3deaa]`}
         >
           Try again
         </button>
@@ -188,15 +190,15 @@ export default function LocalToday() {
   // ready
   const { weather, location, suggestions } = state
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-black/5">
-      <div className="flex items-center gap-3 bg-gradient-to-br from-amber-50 via-rose-50 to-sky-50 px-4 py-3">
-        <span className="text-3xl">{weather.emoji}</span>
+    <div className={shell}>
+      <div className="flex items-center gap-3 border-b border-[#c9a14a]/15 px-4 py-3">
+        <span className="text-2xl">{weather.emoji}</span>
         <div className="min-w-0 flex-1">
-          <p className="text-[18px] font-bold text-slate-900">
+          <p className="font-display text-[20px] font-semibold tracking-tight text-[#f3deaa]">
             {weather.tempF}°F · {weather.condition}
           </p>
           {location.city && (
-            <p className="text-[12px] text-slate-500">{location.city}</p>
+            <p className={`${stencil} mt-0.5`}>{location.city}</p>
           )}
         </div>
       </div>
@@ -204,20 +206,21 @@ export default function LocalToday() {
         suggestions.suggestions.length > 0 ? (
           <div className="px-4 py-3">
             {suggestions.vibe && (
-              <p className="mb-2 font-display text-[14px] italic text-slate-600">
+              <p className="mb-2 font-display text-[13px] italic text-[#c9bf9d]/85">
                 {suggestions.vibe}
               </p>
             )}
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
-              Today might be good for
-            </p>
-            <ul className="mt-2 flex flex-col gap-2">
+            <p className={stencil}>today might be good for</p>
+            <ul className="mt-2 flex flex-col gap-1.5">
               {suggestions.suggestions.map((s, i) => (
-                <li key={i} className="rounded-lg bg-slate-50 px-3 py-2">
-                  <p className="text-[13px] font-semibold text-slate-900">
+                <li
+                  key={i}
+                  className="rounded-md border border-[#c9a14a]/15 bg-[#0d0805]/40 px-3 py-2"
+                >
+                  <p className="text-[13px] font-semibold text-[#e8dcc4]">
                     {s.name}
                   </p>
-                  <p className="text-[12px] leading-snug text-slate-600">
+                  <p className="text-[12px] leading-snug text-[#c9bf9d]/75">
                     {s.why}
                   </p>
                 </li>
@@ -226,7 +229,7 @@ export default function LocalToday() {
           </div>
         ) : null
       ) : (
-        <div className="px-4 py-3 text-[12px] text-slate-500">
+        <div className="px-4 py-3 text-[12px] text-[#c9bf9d]/60">
           Loading suggestions…
         </div>
       )}
