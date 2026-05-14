@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apps, type AppEntry } from '../apps'
 import {
@@ -57,6 +57,20 @@ function tiltFor(name: string): number {
 function zoneKey(app: AppEntry): string { return 'slug' in app ? app.slug : app.name.toLowerCase() }
 function formatDate(d: Date) { return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase() }
 function formatWeekday(d: Date) { return d.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase() }
+function formatClock(d: Date) {
+  return d
+    .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    .toLowerCase()
+}
+
+const RECENT_KEY = 'matisos:recent-app'
+function loadRecentSlug(): string | null {
+  try { return localStorage.getItem(RECENT_KEY) } catch { return null }
+}
+function rememberRecent(app: AppEntry) {
+  if (app.kind !== 'internal') return
+  try { localStorage.setItem(RECENT_KEY, app.slug) } catch {}
+}
 
 // ── SVG: lantern ─────────────────────────────────────────────────────────
 function Lantern() {
@@ -96,7 +110,7 @@ function Lantern() {
         </linearGradient>
       </defs>
       {/* halo behind lantern */}
-      <ellipse cx="70" cy="118" rx="80" ry="80" fill="url(#lanternHalo)" />
+      <ellipse className="ws-halo" cx="70" cy="118" rx="80" ry="80" fill="url(#lanternHalo)" />
       {/* chain */}
       <path d="M70 0 L70 26" stroke="#3a2814" strokeWidth="2" />
       <circle cx="70" cy="6" r="3" fill="none" stroke="#5a3a14" strokeWidth="1" />
@@ -111,8 +125,10 @@ function Lantern() {
       {/* glass body (between posts) */}
       <rect x="41" y="52" width="58" height="100" fill="url(#lanternGlass)" opacity="0.85" />
       {/* flame */}
-      <ellipse cx="70" cy="108" rx="18" ry="30" fill="url(#lanternFlame)" />
-      <ellipse cx="70" cy="102" rx="6" ry="14" fill="#fff8dc" opacity="0.9" />
+      <g className="ws-flame">
+        <ellipse cx="70" cy="108" rx="18" ry="30" fill="url(#lanternFlame)" />
+        <ellipse cx="70" cy="102" rx="6" ry="14" fill="#fff8dc" opacity="0.9" />
+      </g>
       {/* glass highlight */}
       <rect x="45" y="58" width="6" height="88" fill="#fff" opacity="0.06" />
       <rect x="92" y="58" width="3" height="88" fill="#fff" opacity="0.04" />
@@ -758,17 +774,17 @@ function TapeStrip({ corner }: { corner: 'tl' | 'tr' | 'bl' | 'br' }) {
     bl: { bottom: '-4%', left: '-3%', rotate: 22 },
     br: { bottom: '-4%', right: '-3%', rotate: -22 },
   }
-  const o = opts[corner]
+  const { rotate, ...positioning } = opts[corner]
   return (
     <div
       className="pointer-events-none absolute"
       style={{
-        ...o,
+        ...positioning,
         width: '24%',
         height: '14%',
         background:
           'linear-gradient(180deg, rgba(232,220,196,0.85) 0%, rgba(216,200,154,0.75) 100%)',
-        transform: `rotate(${o.rotate}deg)`,
+        transform: `rotate(${rotate}deg)`,
         boxShadow: '0 1px 2px rgba(0,0,0,0.4)',
       }}
     />
@@ -797,7 +813,7 @@ function BulldogClip() {
 }
 
 // ── Hanging tile ──────────────────────────────────────────────────────────
-function HangingTile({ app, dimmed }: { app: AppEntry; dimmed: boolean }) {
+function HangingTile({ app, dimmed, recent, onOpen }: { app: AppEntry; dimmed: boolean; recent: boolean; onOpen: (app: AppEntry) => void }) {
   const key = zoneKey(app)
   const vis = APP_VISUALS[key]
   const Illustration = vis?.Illustration
@@ -850,6 +866,24 @@ function HangingTile({ app, dimmed }: { app: AppEntry; dimmed: boolean }) {
           {vis?.tape && vis.tape !== 'clip' && <TapeStrip corner={vis.tape} />}
           {vis?.tape === 'clip' && <BulldogClip />}
 
+          {recent && (
+            <span
+              aria-label="last used"
+              className="absolute"
+              style={{
+                top: '6%',
+                right: '6%',
+                width: 'min(0.9cqw, 13px)',
+                height: 'min(0.9cqw, 13px)',
+                borderRadius: '9999px',
+                background:
+                  'radial-gradient(circle at 30% 30%, #fff7d6 0%, #c9a14a 60%, #8b6914 100%)',
+                boxShadow: '0 0 12px rgba(201,161,74,0.9), 0 0 4px rgba(255,239,180,0.8)',
+                animation: 'wsGlint 2.6s ease-in-out infinite',
+              }}
+            />
+          )}
+
           {/* illustration */}
           <div className="relative flex items-center justify-center"
                style={{ width: '55%', aspectRatio: '1', marginTop: '4%' }}>
@@ -885,13 +919,13 @@ function HangingTile({ app, dimmed }: { app: AppEntry; dimmed: boolean }) {
 
   if (app.kind === 'external') {
     return (
-      <a href={app.url} target="_blank" rel="noreferrer" aria-label={app.name} title={app.name} className={wrap}>
+      <a href={app.url} target="_blank" rel="noreferrer" aria-label={app.name} title={app.name} className={wrap} onClick={() => onOpen(app)}>
         {inner}
       </a>
     )
   }
   return (
-    <Link to={`/apps/${app.slug}`} aria-label={app.name} title={app.name} className={wrap}>
+    <Link to={`/apps/${app.slug}`} aria-label={app.name} title={app.name} className={wrap} onClick={() => onOpen(app)}>
       {inner}
     </Link>
   )
@@ -901,11 +935,44 @@ function HangingTile({ app, dimmed }: { app: AppEntry; dimmed: boolean }) {
 export default function Launcher() {
   const navigate = useNavigate()
   const liveApps = apps.filter((a) => a.status === 'live')
+  const searchRef = useRef<HTMLInputElement>(null)
 
   const [query, setQuery] = useState('')
+  const [now, setNow] = useState(() => new Date())
   const [weather, setWeather] = useState<Weather | null>(() => loadCachedWeather())
   const [location, setLocation] = useState<Location | null>(() => loadCachedLocation())
   const [suggestions, setSuggestions] = useState<Suggestions | null>(() => loadCachedSuggestions())
+  const [recentSlug] = useState<string | null>(() => loadRecentSlug())
+  const [booted, setBooted] = useState(false)
+
+  // Boot fade-in
+  useEffect(() => {
+    const t = setTimeout(() => setBooted(true), 30)
+    return () => clearTimeout(t)
+  }, [])
+
+  // Live clock — tick every 30s
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
+  // ⌘K / Ctrl+K to focus the search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const isCmdK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'
+      if (isCmdK) {
+        e.preventDefault()
+        searchRef.current?.focus()
+        searchRef.current?.select()
+      } else if (e.key === 'Escape' && document.activeElement === searchRef.current) {
+        searchRef.current?.blur()
+        setQuery('')
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -952,11 +1019,11 @@ export default function Launcher() {
     if (!matchedSlugs || matchedSlugs.size === 0) return
     const first = liveApps.find((a) => matchedSlugs.has(zoneKey(a)))
     if (!first) return
+    rememberRecent(first)
     if (first.kind === 'external') window.open(first.url, '_blank', 'noreferrer')
     else navigate(`/apps/${first.slug}`)
   }
 
-  const now = new Date()
   const suggestionSlots: (Suggestion | null)[] = [0, 1, 2].map((i) => suggestions?.suggestions[i] ?? null)
   const suggestionIcons = [PathIcon, MugIcon, ArchIcon]
   const tiles = liveApps.slice(0, 12)
@@ -965,6 +1032,8 @@ export default function Launcher() {
     <div
       className="fixed inset-0 overflow-hidden"
       style={{
+        opacity: booted ? 1 : 0,
+        transition: 'opacity 600ms ease-out',
         background:
           // ambient lantern pool (warm)
           'radial-gradient(ellipse 35% 50% at 8% 28%, rgba(255,180,80,0.22), transparent 60%),' +
@@ -1036,9 +1105,15 @@ export default function Launcher() {
                style={{ fontSize: 'min(1.55cqw, 22px)', lineHeight: 1 }}>
             {formatDate(now)}
           </div>
-          <div className="font-mono font-bold tracking-[0.3em] text-[#c9a14a]"
-               style={{ fontSize: 'min(0.9cqw, 13px)', lineHeight: 1, marginTop: '5px' }}>
-            {formatWeekday(now)}
+          <div className="flex items-baseline gap-2" style={{ marginTop: '5px' }}>
+            <div className="font-mono font-bold tracking-[0.3em] text-[#c9a14a]"
+                 style={{ fontSize: 'min(0.9cqw, 13px)', lineHeight: 1 }}>
+              {formatWeekday(now)}
+            </div>
+            <div className="font-mono tracking-[0.15em] text-[#c9a14a]/80"
+                 style={{ fontSize: 'min(0.85cqw, 12px)', lineHeight: 1 }}>
+              {formatClock(now)}
+            </div>
           </div>
         </div>
 
@@ -1081,11 +1156,15 @@ export default function Launcher() {
           <svg width="16" height="16" viewBox="0 0 16 16" className="text-[#c9a14a] shrink-0" aria-hidden>
             <path fill="currentColor" d="M11.74 10.34l3.46 3.46-1.41 1.41-3.46-3.46a6 6 0 1 1 1.41-1.41zM6.5 11A4.5 4.5 0 1 0 6.5 2a4.5 4.5 0 0 0 0 9z" />
           </svg>
-          <input type="search" placeholder="find a tool" value={query}
+          <input ref={searchRef} type="search" placeholder="find a tool" value={query}
                  onChange={(e) => setQuery(e.target.value)}
                  aria-label="find a tool"
                  className="font-display italic flex-1 bg-transparent text-[#e8dcc4] outline-none placeholder:text-[#c9bf9d]/55"
                  style={{ fontSize: 'min(1.4cqw, 20px)', marginLeft: '0.9rem' }} />
+          <span className="font-mono tracking-widest text-[#c9a14a]/55 shrink-0"
+                style={{ fontSize: 'min(0.8cqw, 11px)', border: '1px solid rgba(201,161,74,0.35)', borderRadius: '2px', padding: '2px 5px' }}>
+            ⌘K
+          </span>
         </form>
 
         {/* ── PEGBOARD ── */}
@@ -1124,7 +1203,8 @@ export default function Launcher() {
             {tiles.map((app) => {
               const key = zoneKey(app)
               const dimmed = matchedSlugs !== null && !matchedSlugs.has(key)
-              return <HangingTile key={app.name} app={app} dimmed={dimmed} />
+              const isRecent = app.kind === 'internal' && app.slug === recentSlug
+              return <HangingTile key={app.name} app={app} dimmed={dimmed} recent={isRecent} onOpen={rememberRecent} />
             })}
           </div>
         </div>
@@ -1253,6 +1333,27 @@ function Style(): ReactNode {
       }
       .ws-tile:hover .ws-tile-inner {
         transform: rotate(0deg) translateY(-4px) !important;
+      }
+      @keyframes wsFlicker {
+        0%, 100% { transform: scale(1, 1); opacity: 1; }
+        20% { transform: scale(1.04, 0.97); opacity: 0.95; }
+        45% { transform: scale(0.98, 1.03); opacity: 1; }
+        70% { transform: scale(1.03, 0.99); opacity: 0.92; }
+      }
+      @keyframes wsHalo {
+        0%, 100% { opacity: 0.85; }
+        50% { opacity: 1; }
+      }
+      @keyframes wsGlint {
+        0%, 100% { opacity: 0.85; }
+        50% { opacity: 1; }
+      }
+      .ws-flame {
+        animation: wsFlicker 3.4s ease-in-out infinite;
+        transform-origin: 50% 75%;
+      }
+      .ws-halo {
+        animation: wsHalo 5s ease-in-out infinite;
       }
     `}</style>
   )
