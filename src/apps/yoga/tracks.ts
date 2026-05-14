@@ -26,9 +26,112 @@ export type Track = {
   gradient: string
   phases: TrackPhase[]
   modality: Modality
+  // True for tracks that span every modality (the Matis Path). App-wide
+  // tracks are shown at the top of the Programs tab regardless of the
+  // selected modality.
+  appWide?: boolean
 }
 
 export const tracks: Track[] = [
+  {
+    id: 'matis-path',
+    modality: 'yoga',
+    appWide: true,
+    name: 'The Matis Path',
+    subtitle: '18 months · 78 weeks · all six modalities',
+    description:
+      'A daily session that chains all six modalities — yoga, dance, martial arts, strength, breath, meditation — in one progressive arc from novice to pro. Four phases, each with a single daily flow at the right intensity. The path is consistency over depth; the months do the work.',
+    totalWeeks: 78,
+    icon: '🜂',
+    gradient: 'from-orange-500 via-rose-600 to-violet-700',
+    phases: [
+      {
+        id: 'foundation',
+        name: 'Foundation',
+        weeks: 12,
+        description:
+          'Build the daily habit. Twenty minutes, every day, all six modalities at the lightest intensity. The goal is showing up — not depth, not intensity, not soreness.',
+        weeklyMinutes: '~100 min/week (5 × 20 min)',
+        goals: [
+          'Do the daily flow 5 days a week',
+          'Learn the basic shape of each modality',
+          'Make 20 minutes feel like nothing',
+        ],
+        markers: [
+          'You can do the full flow without checking the clock',
+          'Push-ups: 10+ in a clean set',
+          'Box breathing for 3 min feels natural',
+          'Body scan feels like rest, not work',
+        ],
+        weeklyMix: [{ sessionId: 'path-foundation', perWeek: 5 }],
+      },
+      {
+        id: 'build',
+        name: 'Build',
+        weeks: 18,
+        description:
+          'Thirty-five-minute daily flow. Each modality gets more time and slightly harder content. Body recomp starts here — push variations begin, ab work doubles, dance and shadow flows lengthen.',
+        weeklyMinutes: '~210 min/week (6 × 35 min)',
+        goals: [
+          'Daily flow 6 days a week',
+          'Hold a side plank 30s per side',
+          'Run 3 minutes of free-form dance without freezing',
+          'Long-exhale breath drops heart rate visibly',
+        ],
+        markers: [
+          'Push-ups: 20+ in a clean set, wide-grip 15+',
+          'Front kick and side kick on both sides without losing balance',
+          'Belly is noticeably tighter when you check in the mirror',
+          'Sitting in meditation 7 min without restlessness',
+        ],
+        weeklyMix: [{ sessionId: 'path-build', perWeek: 6 }],
+      },
+      {
+        id: 'develop',
+        name: 'Develop',
+        weeks: 24,
+        description:
+          'Fifty-minute daily flow. Aesthetic goals become visible — abs defining, pec shelf forming. Skill across modalities feels real: shadow flows have intent, dance has its own grammar, Wim Hof rounds work.',
+        weeklyMinutes: '~300 min/week (6 × 50 min)',
+        goals: [
+          'Daily flow 6 days a week, full 50 minutes',
+          '4 minutes of free-form dance without stopping',
+          'Wim Hof: 2 full rounds',
+          'Pigeon and warrior poses held without strain',
+        ],
+        markers: [
+          'Six-pack visible in good light, especially upper abs',
+          'Pec shelf and upper-chest line defined',
+          'Decline + diamond push-ups in clean form',
+          'Roundhouse kick on both sides with hip pivot',
+          'Silent sit for 5 min without restlessness',
+        ],
+        weeklyMix: [{ sessionId: 'path-develop', perWeek: 6 }],
+      },
+      {
+        id: 'pro',
+        name: 'Pro',
+        weeks: 24,
+        description:
+          'Sixty-five-minute daily flow. The body is set; the practice is the lifestyle. Inversions, archer push-ups, three rounds of Wim Hof, eleven-minute silent sits. After this phase the program no longer ends — it just is what you do.',
+        weeklyMinutes: '~390 min/week (6 × 65 min)',
+        goals: [
+          'Daily flow 6 days a week, the full 65 minutes',
+          '7 minutes free-form dance',
+          'Wim Hof: 3 full rounds with deep retentions',
+          'Eleven-minute silent sit baseline',
+        ],
+        markers: [
+          'Full six-pack visible all the time, lower abs included',
+          'Crow pose held for 10+ seconds',
+          'Archer push-up on both sides',
+          'Three minutes of shadow flow without dropping intensity',
+          'You feel "off" on a day you skip — the body wants the flow',
+        ],
+        weeklyMix: [{ sessionId: 'path-pro', perWeek: 6 }],
+      },
+    ],
+  },
   {
     id: 'full-flexibility',
     modality: 'yoga',

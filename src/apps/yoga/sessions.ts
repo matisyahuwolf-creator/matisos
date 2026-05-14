@@ -481,6 +481,7 @@ import { martialArtsSessions } from './martial-arts-sessions'
 import { strengthSessions } from './strength-sessions'
 import { breathSessions } from './breath-sessions'
 import { meditationSessions } from './meditation-sessions'
+import { dailyFlowSessions } from './daily-flow-sessions'
 
 export const sessions: Session[] = [
   ...yogaSessions.map((s) => ({ ...s, modality: 'yoga' as const })),
@@ -489,4 +490,5 @@ export const sessions: Session[] = [
   ...strengthSessions,
   ...breathSessions,
   ...meditationSessions,
+  ...dailyFlowSessions,
 ]

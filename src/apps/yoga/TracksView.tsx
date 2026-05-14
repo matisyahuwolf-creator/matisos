@@ -51,8 +51,12 @@ export default function TracksView({ modality }: { modality: Modality }) {
     loadActive(),
   )
   const [openTrackId, setOpenTrackId] = useState<string | null>(null)
+  const appWideTracks = useMemo(
+    () => tracks.filter((t) => t.appWide),
+    [],
+  )
   const filteredTracks = useMemo(
-    () => tracks.filter((t) => t.modality === modality),
+    () => tracks.filter((t) => !t.appWide && t.modality === modality),
     [modality],
   )
   const modalityMeta = MODALITIES[modality]
@@ -130,32 +134,58 @@ export default function TracksView({ modality }: { modality: Modality }) {
   }
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex items-baseline justify-between px-1">
-        <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
-          {modalityMeta.name} programs · {filteredTracks.length}
-        </h3>
-        <span className="text-[11px] text-slate-400">long-form</span>
-      </div>
-      {filteredTracks.length === 0 ? (
-        <div className="rounded-xl bg-slate-50 p-6 text-center text-sm text-slate-500">
-          No {modalityMeta.name.toLowerCase()} programs yet. A progressive
-          long-form track for this modality is on the way.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-3">
-          {filteredTracks.map((track) => (
-            <TrackCard
-              key={track.id}
-              track={track}
-              isOpen={openTrackId === track.id}
-              onClick={() =>
-                setOpenTrackId(openTrackId === track.id ? null : track.id)
-              }
-            />
-          ))}
+    <section className="flex flex-col gap-5">
+      {appWideTracks.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-baseline justify-between px-1">
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              The path · {appWideTracks.length}
+            </h3>
+            <span className="text-[11px] text-slate-400">all six modalities</span>
+          </div>
+          <div className="grid grid-cols-1 gap-3">
+            {appWideTracks.map((track) => (
+              <TrackCard
+                key={track.id}
+                track={track}
+                isOpen={openTrackId === track.id}
+                onClick={() =>
+                  setOpenTrackId(openTrackId === track.id ? null : track.id)
+                }
+              />
+            ))}
+          </div>
         </div>
       )}
+
+      <div className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between px-1">
+          <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+            {modalityMeta.name} programs · {filteredTracks.length}
+          </h3>
+          <span className="text-[11px] text-slate-400">deeper dives</span>
+        </div>
+        {filteredTracks.length === 0 ? (
+          <div className="rounded-xl bg-slate-50 p-6 text-center text-sm text-slate-500">
+            No {modalityMeta.name.toLowerCase()}-specific programs yet. The
+            full daily path above already covers this modality.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3">
+            {filteredTracks.map((track) => (
+              <TrackCard
+                key={track.id}
+                track={track}
+                isOpen={openTrackId === track.id}
+                onClick={() =>
+                  setOpenTrackId(openTrackId === track.id ? null : track.id)
+                }
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
       {openTrack && (
         <TrackDetail
           track={openTrack}
