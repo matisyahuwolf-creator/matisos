@@ -27,7 +27,7 @@ const CATEGORIES = [
   'sleep',
 ] as const
 const ENERGIES = ['low', 'mid', 'high'] as const
-const VIEWS = ['timeline', 'energy', 'priority', 'narrative'] as const
+const VIEWS = ['timeline', 'energy', 'narrative'] as const
 
 type Category = (typeof CATEGORIES)[number]
 type Energy = (typeof ENERGIES)[number]
@@ -100,28 +100,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ? history.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join('\n')
     : '(first exchange)'
 
-  const systemPrompt = `You are Cadence — an AI day-planner for a single user.
-You shape the day around energy, not just time. You're terse, honest, and never preachy.
+  const systemPrompt = `You are Cadence — an AI day-planner. You treat the day as a *shape* — peaks, troughs, weather — not a grid.
+Voice: terse, literary, honest. Never preachy. Never wellness-app chirpy. The user is a sovereign adult.
 
 Today is ${nowIso} (timezone: ${tz}).
 
-You have four ways to render your answer (the "view"):
-- "timeline" — full day in time-ordered blocks. Use when user wants a plan.
-- "energy" — same blocks, but answer is framed around energy peaks/troughs. Use when user asks about energy, focus, fatigue.
-- "priority" — surface only the 2–4 highest-leverage blocks, deprioritize the rest. Use when user is overwhelmed or asks what matters.
-- "narrative" — story-first answer. Use when user is reflecting, asking "how does my day look", or wants framing more than scheduling.
+You have three ways to render your answer (the "view"):
+- "energy" — frame the day as weather. Where focus rises, where it dips, where to be gentle. Pick when user asks about energy, focus, fatigue, mornings, dips, or rhythm.
+- "timeline" — anchor the day to dawn / rise / midday / trough / evening / night. Pick when user wants a plan or asks "what should I do".
+- "narrative" — write the day as a short story across morning / midday / afternoon / evening. Pick when user reflects, asks "how is my day", or wants meaning more than schedule.
 
-CHOOSE the view that best fits the user's last message. Do not always pick "timeline".
+CHOOSE the view that best fits the user's last message. Distribute your picks — don't default to "timeline".
+
+Also return a "headline" — a short italic question or imperative that frames this view (lowercase, no period). Examples:
+- energy: "follow the morning" / "guard the dip" / "follow the rhythm"
+- timeline: "where is focus strongest?" / "what does today ask of you?"
+- narrative: "the story of your day" / "what today taught"
 
 Rules:
-- 4–10 blocks total. Cover roughly 07:00 to 22:00 unless context says otherwise.
+- 4–10 blocks total. Cover roughly 06:00 to 22:00 unless context says otherwise.
 - Respect every fixed commitment exactly — same start/end/title, with fixed:true.
 - Use 24-hour HH:MM times. Blocks must not overlap. End > start.
 - Categories: work | rest | movement | meal | connect | create | admin | sleep.
-- Energy: low | mid | high. Front-load high-energy work when sensible.
-- Each block: a one-line "why" — concrete, specific, never generic.
-- Narrative: 1–3 sentences. No emojis. No hedging.
-- Suggestions: up to 3 short nudges (e.g. "skip the 3pm coffee").`
+- Energy: low | mid | high. Front-load high-energy work when sensible. Vary energy across the day — a real day has a shape.
+- Each block "why": one line, concrete, specific, literary if possible. Never generic.
+- "narrative": 1–3 sentences. No emojis. No hedging.
+- "summary": a "day shape" — a one-phrase title ("today has a long middle", "front-loaded morning, soft afternoon") + a one-line hint ("protect the dip. finish strong.").
+- "suggestions": up to 3 short nudges, lowercase, imperative ("skip the 3pm coffee", "walk between deep blocks").`
 
   const userPrompt = `INTENTS:
 ${intentsBlock}
@@ -137,8 +142,10 @@ ${message}
 
 Return ONLY JSON in this shape:
 {
-  "view": "timeline" | "energy" | "priority" | "narrative",
+  "view": "energy" | "timeline" | "narrative",
+  "headline": "short italic question framing this view",
   "narrative": "1-3 sentences framing the day",
+  "summary": { "title": "today has a long middle", "hint": "protect the dip. finish strong." },
   "blocks": [
     {
       "id": "kebab-slug",
@@ -147,7 +154,7 @@ Return ONLY JSON in this shape:
       "title": "Short label",
       "category": "work | rest | movement | meal | connect | create | admin | sleep",
       "energy": "low | mid | high",
-      "why": "One concrete reason this slot.",
+      "why": "One concrete, literary reason for this slot.",
       "fixed": false
     }
   ],
@@ -184,7 +191,9 @@ Return ONLY JSON in this shape:
     }
     let parsed: {
       view?: string
+      headline?: string
       narrative?: string
+      summary?: { title?: unknown; hint?: unknown }
       blocks?: Block[]
       suggestions?: unknown[]
     }
@@ -221,10 +230,29 @@ Return ONLY JSON in this shape:
           .slice(0, 3)
       : []
 
+    const summary =
+      parsed.summary && typeof parsed.summary === 'object'
+        ? {
+            title:
+              typeof parsed.summary.title === 'string'
+                ? parsed.summary.title.trim().slice(0, 80)
+                : '',
+            hint:
+              typeof parsed.summary.hint === 'string'
+                ? parsed.summary.hint.trim().slice(0, 120)
+                : '',
+          }
+        : { title: '', hint: '' }
+
     res.status(200).json({
       view: pickEnum<View>(parsed.view, VIEWS, 'timeline'),
+      headline:
+        typeof parsed.headline === 'string'
+          ? parsed.headline.trim().toLowerCase().slice(0, 60)
+          : '',
       narrative:
         typeof parsed.narrative === 'string' ? parsed.narrative.trim() : '',
+      summary,
       blocks,
       suggestions,
     })

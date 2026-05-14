@@ -192,6 +192,11 @@ a:focus-visible {
   letter-spacing: -0.02em;
 }
 
+@utility font-hand {
+  font-family: 'Caveat', 'Bradley Hand', 'Brush Script MT', cursive;
+  letter-spacing: 0.005em;
+}
+
 @utility gradient-text {
   background-image: linear-gradient(
     120deg,
