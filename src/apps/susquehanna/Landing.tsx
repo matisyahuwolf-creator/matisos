@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import ChatWidget from './ChatWidget'
 
 const SCOPED_STYLES = `
@@ -96,9 +96,18 @@ const SCOPED_STYLES = `
   @keyframes susq-flow-dash { to { stroke-dashoffset: -200; } }
   #susq-landing .flow-line { stroke-dasharray: 6 10; animation: susq-flow-dash 8s linear infinite; }
 
-  /* reveal on scroll */
-  #susq-landing .reveal { opacity: 0; transform: translateY(14px); transition: opacity 800ms ease, transform 800ms ease; }
+  /* reveal on scroll — staggered cubic curve */
+  #susq-landing .reveal { opacity: 0; transform: translateY(20px); transition: opacity 900ms cubic-bezier(0.22, 1, 0.36, 1), transform 900ms cubic-bezier(0.22, 1, 0.36, 1); }
   #susq-landing .reveal.in { opacity: 1; transform: none; }
+
+  /* stagger children — applied via inline style with --i index */
+  #susq-landing .stagger-child {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 800ms cubic-bezier(0.22, 1, 0.36, 1), transform 800ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: calc(var(--i, 0) * 90ms);
+  }
+  #susq-landing .reveal.in .stagger-child { opacity: 1; transform: none; }
 
   /* bounce dots */
   @keyframes susq-bounce {
@@ -106,8 +115,142 @@ const SCOPED_STYLES = `
     40% { transform: translateY(-4px); opacity: 1; }
   }
 
-  /* stamp tilt */
-  #susq-landing .stamp { transform: rotate(8deg); }
+  /* stamp — rotates, gently jiggles on hover of postcard */
+  #susq-landing .stamp { transform: rotate(8deg); transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1); }
+  #susq-landing .postcard:hover .stamp { transform: rotate(4deg) scale(1.02); }
+
+  /* postcard subtle 3D tilt on hover */
+  #susq-landing .postcard {
+    transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 400ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  #susq-landing .postcard:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.4) inset,
+      0 26px 50px -22px rgba(122, 95, 58, 0.32),
+      0 2px 6px rgba(122, 95, 58, 0.1);
+  }
+
+  /* swaying trees / reeds */
+  @keyframes susq-sway-a { 0%,100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.5deg); } }
+  @keyframes susq-sway-b { 0%,100% { transform: rotate(2deg); } 50% { transform: rotate(-2deg); } }
+  #susq-landing .sway-a { animation: susq-sway-a 5.5s ease-in-out infinite; transform-origin: center bottom; }
+  #susq-landing .sway-b { animation: susq-sway-b 7s ease-in-out infinite; transform-origin: center bottom; }
+
+  /* bobbing boat */
+  @keyframes susq-bob {
+    0%,100% { transform: translate(0, 0) rotate(-1.5deg); }
+    50% { transform: translate(0, -3px) rotate(1.5deg); }
+  }
+  #susq-landing .bob { animation: susq-bob 6s ease-in-out infinite; transform-origin: center bottom; }
+
+  /* river current — flowing dashed line */
+  @keyframes susq-current { to { stroke-dashoffset: -240; } }
+  #susq-landing .current { stroke-dasharray: 4 8; animation: susq-current 14s linear infinite; }
+  #susq-landing .current-slow { stroke-dasharray: 6 12; animation: susq-current 22s linear infinite; }
+
+  /* water shimmer — gradient shift */
+  @keyframes susq-shimmer {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.7; }
+  }
+  #susq-landing .shimmer { animation: susq-shimmer 4s ease-in-out infinite; }
+
+  /* SVG stroke draw on enter */
+  @keyframes susq-draw {
+    to { stroke-dashoffset: 0; }
+  }
+  #susq-landing .reveal.in .draw-on-enter {
+    stroke-dasharray: 400;
+    stroke-dashoffset: 400;
+    animation: susq-draw 1800ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+    animation-delay: calc(var(--draw-delay, 0) * 1ms);
+  }
+
+  /* floating UI cards in hero — different drift speeds for parallax feel */
+  @keyframes susq-float-1 {
+    0%,100% { transform: translate(0, 0); }
+    50% { transform: translate(0, -8px); }
+  }
+  @keyframes susq-float-2 {
+    0%,100% { transform: translate(0, 0); }
+    50% { transform: translate(-2px, -10px); }
+  }
+  @keyframes susq-float-3 {
+    0%,100% { transform: translate(0, 0); }
+    50% { transform: translate(2px, -6px); }
+  }
+  #susq-landing .float-1 { animation: susq-float-1 6s ease-in-out infinite; }
+  #susq-landing .float-2 { animation: susq-float-2 7.5s ease-in-out infinite; }
+  #susq-landing .float-3 { animation: susq-float-3 5.5s ease-in-out infinite; }
+
+  /* card entrance — fade + small scale */
+  @keyframes susq-card-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  #susq-landing .card-enter {
+    opacity: 0;
+    animation: susq-card-in 800ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: calc(var(--delay, 0) * 1ms);
+  }
+
+  /* ochre dot pop-in for charter counter */
+  @keyframes susq-pop {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  #susq-landing .reveal.in .pop-in {
+    animation: susq-pop 600ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation-delay: calc(var(--i, 0) * 110ms + 200ms);
+    transform: scale(0);
+  }
+
+  /* button shine */
+  #susq-landing .btn-shine {
+    position: relative;
+    overflow: hidden;
+  }
+  #susq-landing .btn-shine::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.25), transparent);
+    transform: skewX(-25deg);
+    transition: left 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  #susq-landing .btn-shine:hover::after { left: 125%; }
+
+  /* feature card icon micro-bounce on hover */
+  #susq-landing .feature-card .icon-wrap { transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1); }
+  #susq-landing .feature-card:hover .icon-wrap { transform: translateY(-3px) scale(1.05); }
+
+  /* paper texture overlay for cards */
+  #susq-landing .paper-tex {
+    position: relative;
+  }
+  #susq-landing .paper-tex::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.13 0 0 0 0 0.09 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: multiply;
+    opacity: 0.5;
+  }
+
+  /* section-transition gradient bleed */
+  #susq-landing .bleed-top {
+    background: linear-gradient(to bottom, rgba(243, 234, 210, 0.6) 0%, transparent 80px);
+  }
+  #susq-landing .bleed-bot {
+    background: linear-gradient(to top, rgba(243, 234, 210, 0.6) 0%, transparent 80px);
+  }
 `
 
 const TRUST_LOGOS = [
@@ -520,9 +663,13 @@ export default function Landing({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="reveal grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-            {SERVICES.map((s) => (
-              <div key={s.title} className="feature-card rounded-xl p-5 text-center">
-                <div className="mx-auto mb-4 h-12 w-12 text-[#1b2f37]">{s.icon}</div>
+            {SERVICES.map((s, i) => (
+              <div
+                key={s.title}
+                className="feature-card stagger-child paper-tex rounded-xl p-5 text-center"
+                style={{ ['--i' as string]: i }}
+              >
+                <div className="icon-wrap mx-auto mb-4 h-12 w-12 text-[#1b2f37]">{s.icon}</div>
                 <h3 className="serif text-[17px] font-medium leading-tight text-[#1b2f37]">{s.title}</h3>
                 <p className="mt-2 text-[13px] leading-relaxed text-[#3b3528]">{s.body}</p>
               </div>
@@ -592,15 +739,17 @@ export default function Landing({ onClose }: { onClose: () => void }) {
               </p>
 
               <div className="mt-7 grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-4">
-                {STATS.map((s) => (
-                  <div key={s.label}>
+                {STATS.map((s, i) => (
+                  <div key={s.label} className="stagger-child" style={{ ['--i' as string]: i }}>
                     <div className="flex items-center gap-1.5 text-[#a16a35]">
                       <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="9" />
                         <path d="M9 12l2 2 4-4" />
                       </svg>
                     </div>
-                    <div className="serif mt-1 text-[26px] font-medium leading-none text-[#1b2f37]">{s.value}</div>
+                    <div className="serif mt-1 text-[28px] font-medium leading-none text-[#1b2f37]">
+                      <Counter value={s.value} delay={i * 90 + 200} />
+                    </div>
                     <div className="mt-1.5 text-[11.5px] leading-tight text-[#3b3528]">{s.label}</div>
                   </div>
                 ))}
@@ -674,7 +823,7 @@ export default function Landing({ onClose }: { onClose: () => void }) {
                 </p>
               </div>
 
-              <div className="text-center md:col-span-3">
+              <div className="reveal text-center md:col-span-3">
                 <div className="flex items-baseline justify-center gap-2">
                   <span className="serif text-[64px] font-medium leading-none text-[#f5efe1] md:text-[80px]">{CHARTER_CLAIMED}</span>
                   <span className="serif text-[28px] text-[#8aaab5] md:text-[36px]">/{CHARTER_TOTAL}</span>
@@ -686,9 +835,10 @@ export default function Landing({ onClose }: { onClose: () => void }) {
                   {Array.from({ length: CHARTER_TOTAL }).map((_, i) => (
                     <span
                       key={i}
-                      className={`h-3 w-3 rounded-full ${
+                      style={{ ['--i' as string]: i }}
+                      className={`pop-in h-3 w-3 rounded-full ${
                         i < CHARTER_CLAIMED
-                          ? 'bg-[#c08c4a]'
+                          ? 'bg-[#c08c4a] shadow-[0_0_10px_rgba(192,140,74,0.6)]'
                           : 'border border-[#c08c4a]/45 bg-transparent'
                       }`}
                       aria-hidden
@@ -828,101 +978,268 @@ export default function Landing({ onClose }: { onClose: () => void }) {
      - swapping the <svg>...</svg> for <img src="/susquehanna/<name>.png" />
    ============================================================ */
 
+/** Animated count-up for stat values. Parses leading digits, preserves suffix. */
+function Counter({ value, delay = 0, duration = 1400 }: { value: string; delay?: number; duration?: number }) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const [display, setDisplay] = useState<string>(() => {
+    const m = value.match(/^([\d,]+)(.*)$/)
+    if (!m) return value
+    return '0' + m[2]
+  })
+  const startedRef = useRef(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const match = value.match(/^([\d,]+)(.*)$/)
+    if (!match) {
+      setDisplay(value)
+      return
+    }
+    const target = parseInt(match[1].replace(/,/g, ''), 10)
+    const suffix = match[2]
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting && !startedRef.current) {
+            startedRef.current = true
+            const start = performance.now() + delay
+            let raf = 0
+            const step = (now: number) => {
+              const t = Math.min(1, Math.max(0, (now - start) / duration))
+              // easeOutCubic
+              const eased = 1 - Math.pow(1 - t, 3)
+              const current = Math.round(target * eased)
+              const formatted = target >= 1000 ? current.toLocaleString() : String(current)
+              setDisplay(formatted + suffix)
+              if (t < 1) raf = requestAnimationFrame(step)
+            }
+            raf = requestAnimationFrame(step)
+            return () => cancelAnimationFrame(raf)
+          }
+        })
+      },
+      { threshold: 0.3 },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [value, delay, duration])
+
+  return <span ref={ref}>{display}</span>
+}
+
 function HeroIllustration() {
   return (
     <div className="postcard relative aspect-[5/4] overflow-hidden rounded-lg">
-      {/* backdrop scene: window with mountains + river */}
+      {/* backdrop scene: warm interior with window view */}
       <svg viewBox="0 0 500 400" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full" aria-hidden>
         <defs>
           <linearGradient id="hero-wall" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#e9d8b3" />
-            <stop offset="100%" stopColor="#d8c79b" />
+            <stop offset="0%" stopColor="#ecdbaf" />
+            <stop offset="50%" stopColor="#e2cb95" />
+            <stop offset="100%" stopColor="#d2b97c" />
           </linearGradient>
           <linearGradient id="hero-sky" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#e9d8b3" />
-            <stop offset="80%" stopColor="#cddbe0" />
+            <stop offset="0%" stopColor="#f0dbb0" />
+            <stop offset="60%" stopColor="#e0d5b6" />
+            <stop offset="100%" stopColor="#bcd1d5" />
           </linearGradient>
           <linearGradient id="hero-water" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor="#8aaab5" />
-            <stop offset="100%" stopColor="#3b6877" />
+            <stop offset="100%" stopColor="#2e525e" />
           </linearGradient>
+          <linearGradient id="hero-counter" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#a16a35" />
+            <stop offset="100%" stopColor="#6e4520" />
+          </linearGradient>
+          <radialGradient id="hero-glow" cx="0.85" cy="0.25" r="0.6">
+            <stop offset="0%" stopColor="#f3deaa" stopOpacity="0.85" />
+            <stop offset="60%" stopColor="#f3deaa" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#f3deaa" stopOpacity="0" />
+          </radialGradient>
+          <pattern id="hero-wood" x="0" y="0" width="500" height="14" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="7" x2="500" y2="7" stroke="#7a4a1f" strokeWidth="0.4" opacity="0.35" />
+            <path d="M40 7 q20 -2 40 0 q20 2 40 0" fill="none" stroke="#7a4a1f" strokeWidth="0.25" opacity="0.3" />
+            <path d="M180 7 q15 -1.5 30 0 q15 1.5 30 0" fill="none" stroke="#7a4a1f" strokeWidth="0.25" opacity="0.3" />
+            <path d="M340 7 q20 -2 40 0 q20 2 40 0" fill="none" stroke="#7a4a1f" strokeWidth="0.25" opacity="0.3" />
+          </pattern>
         </defs>
+
         <rect width="500" height="400" fill="url(#hero-wall)" />
-        {/* wood panels */}
-        <g opacity="0.4">
-          <line x1="0" y1="260" x2="500" y2="260" stroke="#a16a35" strokeWidth="0.5" />
-          <line x1="0" y1="310" x2="500" y2="310" stroke="#a16a35" strokeWidth="0.5" />
-          <line x1="0" y1="350" x2="500" y2="350" stroke="#a16a35" strokeWidth="0.5" />
+        {/* warm glow from window */}
+        <rect width="500" height="400" fill="url(#hero-glow)" />
+
+        {/* wall texture — subtle stippling */}
+        <g opacity="0.18">
+          {Array.from({ length: 36 }).map((_, i) => (
+            <circle key={i} cx={(i * 47) % 500} cy={(i * 31) % 260} r="0.6" fill="#7a4a1f" />
+          ))}
         </g>
-        {/* window frame with view */}
+
+        {/* window frame */}
         <g>
-          <rect x="320" y="60" width="150" height="160" fill="url(#hero-sky)" stroke="#75694d" strokeWidth="2" />
-          {/* distant mountains */}
-          <path d="M320 170 L340 150 L370 165 L395 145 L425 160 L450 145 L470 160 L470 220 L320 220 Z" fill="#5f7549" opacity="0.7" />
-          <path d="M320 180 L350 165 L385 175 L420 160 L450 170 L470 165 L470 220 L320 220 Z" fill="#465938" opacity="0.85" />
-          {/* river */}
-          <path d="M320 200 Q360 192 395 200 T470 200 L470 220 L320 220 Z" fill="url(#hero-water)" />
-          {/* sun */}
-          <circle cx="440" cy="100" r="14" fill="#c08c4a" opacity="0.65" />
+          {/* outer frame */}
+          <rect x="310" y="48" width="170" height="180" fill="#5b3a1c" stroke="#3b2618" strokeWidth="2" />
+          {/* inner glass area */}
+          <rect x="318" y="56" width="154" height="164" fill="url(#hero-sky)" />
+          {/* far mountains */}
+          <path d="M318 156 L334 130 L352 142 L378 122 L402 138 L424 124 L446 138 L472 124 L472 220 L318 220 Z" fill="#7a9162" opacity="0.55" />
+          {/* mid mountains */}
+          <path d="M318 172 L336 152 L360 168 L388 148 L412 164 L438 148 L466 164 L472 162 L472 220 L318 220 Z" fill="#5f7549" opacity="0.75" />
+          {/* close treeline */}
+          <path d="M318 188 L328 178 L340 184 L352 176 L366 184 L380 176 L394 184 L408 178 L424 184 L440 178 L456 184 L472 178 L472 220 L318 220 Z" fill="#465938" opacity="0.9" />
+          {/* river under bridge */}
+          <path d="M318 200 Q360 192 400 200 T472 198 L472 220 L318 220 Z" fill="url(#hero-water)" />
+          {/* river shimmer */}
+          <path d="M328 206 Q368 200 408 205 T468 204" fill="none" stroke="#cddbe0" strokeWidth="0.8" opacity="0.6" />
+          <path d="M324 213 Q360 208 396 211 T468 210" fill="none" stroke="#cddbe0" strokeWidth="0.6" opacity="0.4" />
+          {/* sun + warm halo */}
+          <circle cx="448" cy="92" r="22" fill="#f3deaa" opacity="0.55" />
+          <circle cx="448" cy="92" r="13" fill="#c08c4a" opacity="0.8" />
+          {/* clouds */}
+          <ellipse cx="350" cy="82" rx="18" ry="3" fill="#f5efe1" opacity="0.7" />
+          <ellipse cx="380" cy="90" rx="14" ry="2.5" fill="#f5efe1" opacity="0.55" />
+          {/* mullions */}
+          <line x1="395" y1="56" x2="395" y2="220" stroke="#3b2618" strokeWidth="1.5" opacity="0.8" />
+          <line x1="318" y1="138" x2="472" y2="138" stroke="#3b2618" strokeWidth="1.5" opacity="0.8" />
         </g>
+
         {/* picture frames on wall */}
-        <g stroke="#75694d" strokeWidth="1.5" fill="#f3ead2">
-          <rect x="50" y="80" width="40" height="50" />
-          <rect x="105" y="65" width="55" height="40" />
-          <rect x="178" y="80" width="38" height="46" />
+        <g>
+          <g stroke="#5b3a1c" strokeWidth="2" fill="#f3ead2">
+            <rect x="50" y="78" width="42" height="54" />
+          </g>
+          <g stroke="#5b3a1c" strokeWidth="1.5" fill="#7a9162" opacity="0.7">
+            <path d="M55 92 q5 -8 10 0 q5 -10 12 -2 q4 -6 10 0 v34 h-32 z" />
+          </g>
+          <g stroke="#5b3a1c" strokeWidth="2" fill="#f3ead2">
+            <rect x="108" y="62" width="58" height="42" />
+          </g>
+          {/* drawing of a river */}
+          <g stroke="#3b6877" strokeWidth="1.2" fill="none" opacity="0.8">
+            <path d="M112 88 Q124 80 138 86 T164 84" />
+            <path d="M112 96 Q124 90 138 94 T164 92" />
+          </g>
+          <g stroke="#5b3a1c" strokeWidth="2" fill="#f3ead2">
+            <rect x="184" y="78" width="38" height="50" />
+          </g>
+          <text x="203" y="106" textAnchor="middle" fontFamily="Fraunces, serif" fontStyle="italic" fontSize="11" fill="#75694d">est.</text>
+          <text x="203" y="120" textAnchor="middle" fontFamily="Fraunces, serif" fontSize="13" fill="#3b2618">2026</text>
         </g>
+
+        {/* shelf with books */}
+        <g transform="translate(35 145)">
+          <rect x="0" y="40" width="245" height="3" fill="#5b3a1c" />
+          <g>
+            <rect x="6" y="20" width="6" height="20" fill="#5f7549" />
+            <rect x="13" y="24" width="6" height="16" fill="#a16a35" />
+            <rect x="20" y="18" width="6" height="22" fill="#3b6877" />
+            <rect x="27" y="22" width="6" height="18" fill="#c08c4a" />
+            <rect x="34" y="20" width="6" height="20" fill="#465938" />
+            <rect x="48" y="26" width="14" height="14" rx="1" fill="#a16a35" />
+            <circle cx="55" cy="33" r="3" fill="#f3deaa" />
+          </g>
+        </g>
+
         {/* counter / desk */}
-        <rect x="50" y="260" width="430" height="90" fill="#a16a35" opacity="0.75" />
-        <rect x="50" y="260" width="430" height="6" fill="#75694d" />
-        {/* sign */}
-        <g transform="translate(245 340)">
-          <rect x="-50" y="-12" width="100" height="22" fill="#f3ead2" stroke="#75694d" strokeWidth="1" />
-          <text x="0" y="3" textAnchor="middle" fontFamily="Fraunces, serif" fontSize="9" fill="#1b2f37">
-            WELCOME
-          </text>
-          <text x="0" y="14" textAnchor="middle" fontFamily="Fraunces, serif" fontStyle="italic" fontSize="8" fill="#3b6877">
-            to The River Table
-          </text>
+        <rect x="40" y="270" width="440" height="100" fill="url(#hero-counter)" />
+        <rect x="40" y="270" width="440" height="14" fill="url(#hero-wood)" />
+        <rect x="40" y="270" width="440" height="2" fill="#3b2618" />
+        {/* shadow under counter */}
+        <rect x="40" y="368" width="440" height="6" fill="#1b1208" opacity="0.4" />
+
+        {/* sign on counter */}
+        <g transform="translate(255 350)">
+          <rect x="-58" y="-14" width="116" height="26" rx="1.5" fill="#f3ead2" stroke="#5b3a1c" strokeWidth="1.2" />
+          <text x="0" y="-2" textAnchor="middle" fontFamily="Fraunces, serif" fontSize="9" letterSpacing="2" fill="#1b2f37">WELCOME</text>
+          <text x="0" y="9" textAnchor="middle" fontFamily="Fraunces, serif" fontStyle="italic" fontSize="9" fill="#3b6877">to The River Table</text>
         </g>
-        {/* plant */}
-        <g transform="translate(75 230)">
-          <path d="M0 30 q-4 -22 0 -28 q4 6 0 28" fill="#5f7549" opacity="0.85" />
-          <path d="M-4 30 q-10 -16 -2 -26 q6 8 2 26" fill="#7a9162" opacity="0.85" />
-          <path d="M4 30 q10 -16 2 -26 q-6 8 -2 26" fill="#7a9162" opacity="0.85" />
-          <rect x="-9" y="28" width="18" height="14" fill="#a16a35" />
+
+        {/* potted plant — fronds (with sway via class) */}
+        <g transform="translate(80 250)">
+          <g className="sway-a">
+            <path d="M0 38 Q-2 18 -2 -2 Q4 18 0 38 Z" fill="#5f7549" opacity="0.9" />
+            <path d="M-6 40 Q-14 22 -10 4 Q-2 22 -6 40 Z" fill="#7a9162" opacity="0.9" />
+            <path d="M6 40 Q14 22 10 4 Q2 22 6 40 Z" fill="#7a9162" opacity="0.85" />
+            <path d="M-12 42 Q-22 28 -18 14 Q-8 28 -12 42 Z" fill="#465938" opacity="0.8" />
+            <path d="M12 42 Q22 28 18 14 Q8 28 12 42 Z" fill="#465938" opacity="0.85" />
+          </g>
+          {/* pot */}
+          <path d="M-14 40 L14 40 L11 60 L-11 60 Z" fill="#a16a35" />
+          <ellipse cx="0" cy="40" rx="14" ry="3" fill="#5b3a1c" />
+          <line x1="-13" y1="46" x2="13" y2="46" stroke="#5b3a1c" strokeWidth="0.5" opacity="0.6" />
         </g>
-        {/* simplified figure at counter (hostess) */}
-        <g transform="translate(245 230)">
-          {/* hair bun */}
-          <circle cx="0" cy="-30" r="8" fill="#3b2618" />
-          <circle cx="0" cy="-40" r="5" fill="#3b2618" />
-          {/* face */}
-          <ellipse cx="0" cy="-18" rx="9" ry="10" fill="#e9c9a3" />
-          {/* body */}
-          <path d="M-18 -8 q0 -4 4 -6 q6 -3 14 -3 q8 0 14 3 q4 2 4 6 v36 h-36 z" fill="#3b3528" />
-          {/* arms / tablet */}
-          <rect x="-14" y="6" width="28" height="18" rx="2" fill="#1b2f37" />
-          <rect x="-12" y="8" width="24" height="14" rx="1" fill="#cddbe0" />
+
+        {/* hostess figure */}
+        <g transform="translate(250 215)">
+          {/* hair bun back */}
+          <ellipse cx="0" cy="-43" rx="7" ry="6" fill="#1f1108" />
+          {/* head */}
+          <ellipse cx="0" cy="-22" rx="11" ry="13" fill="#e9c9a3" />
+          {/* cheek tone */}
+          <ellipse cx="-5" cy="-19" rx="2" ry="1.5" fill="#d4a380" opacity="0.7" />
+          <ellipse cx="5" cy="-19" rx="2" ry="1.5" fill="#d4a380" opacity="0.7" />
+          {/* eyes */}
+          <ellipse cx="-3.5" cy="-23" rx="1" ry="0.6" fill="#1b1208" />
+          <ellipse cx="3.5" cy="-23" rx="1" ry="0.6" fill="#1b1208" />
+          {/* smile */}
+          <path d="M-3 -16 q3 2 6 0" fill="none" stroke="#7a4a1f" strokeWidth="1" strokeLinecap="round" />
+          {/* hair front strands */}
+          <path d="M-11 -28 q-2 -8 4 -14 q6 -4 11 -2" fill="none" stroke="#1f1108" strokeWidth="2.5" strokeLinecap="round" />
+          {/* hair top bun */}
+          <ellipse cx="0" cy="-36" rx="6" ry="5" fill="#2a1a0c" />
+          <ellipse cx="-1" cy="-37" rx="3" ry="2.5" fill="#1f1108" />
+          {/* shoulders / blouse */}
+          <path d="M-22 -7 Q-20 -12 -14 -14 Q-7 -16 0 -16 Q7 -16 14 -14 Q20 -12 22 -7 L24 30 L-24 30 Z" fill="#3b3528" />
+          {/* button line */}
+          <line x1="0" y1="-10" x2="0" y2="22" stroke="#1f1108" strokeWidth="0.5" opacity="0.6" />
+          <circle cx="0" cy="-4" r="0.8" fill="#a16a35" />
+          <circle cx="0" cy="6" r="0.8" fill="#a16a35" />
+          <circle cx="0" cy="16" r="0.8" fill="#a16a35" />
+          {/* arms forward */}
+          <path d="M-18 0 Q-22 10 -16 18" fill="none" stroke="#3b3528" strokeWidth="9" strokeLinecap="round" />
+          <path d="M18 0 Q22 10 16 18" fill="none" stroke="#3b3528" strokeWidth="9" strokeLinecap="round" />
+          {/* hands */}
+          <circle cx="-14" cy="20" r="3.5" fill="#e9c9a3" />
+          <circle cx="14" cy="20" r="3.5" fill="#e9c9a3" />
+          {/* tablet */}
+          <rect x="-16" y="18" width="32" height="22" rx="2.5" fill="#1b2f37" />
+          <rect x="-14" y="20" width="28" height="18" rx="1" fill="#cddbe0" />
+          {/* tablet content */}
+          <rect x="-12" y="22" width="14" height="1.2" fill="#3b6877" />
+          <rect x="-12" y="25" width="22" height="1" fill="#75694d" opacity="0.6" />
+          <rect x="-12" y="28" width="18" height="1" fill="#75694d" opacity="0.6" />
+          <rect x="-12" y="33" width="10" height="3" rx="0.5" fill="#c08c4a" />
         </g>
       </svg>
 
-      {/* floating UI cards */}
-      <div className="absolute left-4 top-4 max-w-[180px] rounded-lg border border-[#d8c79b] bg-[#fffaee]/95 p-3 shadow-sm backdrop-blur">
+      {/* floating UI cards — staggered entry, gentle individual drift */}
+      <div
+        className="card-enter float-1 absolute left-4 top-4 max-w-[180px] rounded-lg border border-[#d8c79b] bg-[#fffaee]/95 p-3 shadow-[0_8px_20px_-10px_rgba(122,95,58,0.35)] backdrop-blur"
+        style={{ ['--delay' as string]: 300 }}
+      >
         <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-[#75694d]">
-          <svg className="h-3 w-3 text-[#3b6877]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 10h.01M12 10h.01M16 10h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" /></svg>
+          <svg className="h-3 w-3 text-[#3b6877]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8 v4 l3 2" />
+          </svg>
           <span>Table for 4</span>
         </div>
         <div className="serif mt-1 text-[13px] text-[#1b2f37]">Tonight at 6:30 PM</div>
       </div>
 
-      <div className="drift absolute left-4 bottom-32 max-w-[210px] rounded-lg border border-[#d8c79b] bg-[#fffaee]/95 p-3 shadow-md">
-        <div className="flex items-center gap-1.5 text-[10px] font-semibold text-[#5f7549]">
+      <div
+        className="card-enter float-2 absolute left-4 bottom-32 max-w-[210px] rounded-lg border border-[#d8c79b] bg-[#fffaee]/95 p-3 shadow-[0_14px_28px_-14px_rgba(122,95,58,0.4)]"
+        style={{ ['--delay' as string]: 600 }}
+      >
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-[#5f7549]">
           <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
           Reservation Confirmed
         </div>
         <div className="serif mt-1.5 text-[14px] text-[#1b2f37]">The River Table</div>
         <div className="mt-1 text-[11px] text-[#3b3528]">6:30 PM · Table 12 · Special Occasion</div>
-        <button className="mt-2 w-full rounded border border-[#cdbf9f] bg-[#f3ead2] px-2 py-1 text-[11px] font-medium text-[#1b2f37]">
+        <button className="mt-2 w-full rounded border border-[#cdbf9f] bg-[#f3ead2] px-2 py-1 text-[11px] font-medium text-[#1b2f37] transition hover:bg-[#ecdbaf]">
           Add to Waitlist
         </button>
         <div className="mt-2 flex items-center gap-1 text-[10px] text-[#75694d]">
@@ -931,7 +1248,10 @@ function HeroIllustration() {
         </div>
       </div>
 
-      <div className="absolute right-4 bottom-4 max-w-[170px] rounded-lg border border-[#d8c79b] bg-[#fffaee]/95 p-3 shadow-md">
+      <div
+        className="card-enter float-3 absolute right-4 bottom-4 max-w-[170px] rounded-lg border border-[#d8c79b] bg-[#fffaee]/95 p-3 shadow-[0_14px_28px_-14px_rgba(122,95,58,0.4)]"
+        style={{ ['--delay' as string]: 900 }}
+      >
         <div className="text-[10px] font-semibold uppercase tracking-widest text-[#1b2f37]">Tonight's Snapshot</div>
         <div className="mt-2 space-y-1 text-[11px]">
           <div className="flex justify-between text-[#3b3528]"><span>Reservations</span><span className="serif text-[#1b2f37]">28</span></div>
@@ -940,7 +1260,7 @@ function HeroIllustration() {
         </div>
         <div className="mt-2 border-t border-[#cdbf9f]/60 pt-2 text-[10px] text-[#5f7549]">
           <div className="font-semibold uppercase tracking-widest">AI Suggestion</div>
-          <div className="mt-1 text-[#3b3528] leading-snug">Prep for a busy 6–8pm window. Upsize staff and notify kitchen.</div>
+          <div className="mt-1 leading-snug text-[#3b3528]">Prep for a busy 6–8pm window. Upsize staff and notify kitchen.</div>
         </div>
       </div>
     </div>
@@ -952,115 +1272,300 @@ function MissionIllustration() {
     <svg viewBox="0 0 500 400" preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden>
       <defs>
         <linearGradient id="mission-sky" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#e9d8b3" />
-          <stop offset="100%" stopColor="#f3ead2" />
+          <stop offset="0%" stopColor="#f0dbb0" />
+          <stop offset="40%" stopColor="#ebd9b0" />
+          <stop offset="80%" stopColor="#dbcfa8" />
+          <stop offset="100%" stopColor="#bfc9b5" />
+        </linearGradient>
+        <linearGradient id="mission-far-mtn" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#8aaab5" />
+          <stop offset="100%" stopColor="#5f7549" />
         </linearGradient>
         <linearGradient id="mission-river" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#8aaab5" />
-          <stop offset="100%" stopColor="#3b6877" />
+          <stop offset="0%" stopColor="#9bb3bb" />
+          <stop offset="50%" stopColor="#6d8d97" />
+          <stop offset="100%" stopColor="#2e525e" />
         </linearGradient>
       </defs>
+
       <rect width="500" height="400" fill="url(#mission-sky)" />
-      {/* distant mountains */}
-      <path d="M0 180 L50 130 L100 160 L160 110 L220 150 L290 120 L360 155 L420 130 L500 165 L500 240 L0 240 Z" fill="#7a9162" opacity="0.55" />
-      <path d="M0 200 L60 170 L130 195 L200 165 L260 190 L330 165 L400 195 L460 175 L500 200 L500 260 L0 260 Z" fill="#5f7549" opacity="0.75" />
-      {/* bridge across river */}
-      <g stroke="#75694d" strokeWidth="1.5" fill="#a16a35" opacity="0.8">
-        <path d="M40 250 q30 -20 60 0 q30 -20 60 0 q30 -20 60 0 L220 260 L40 260 Z" />
-        <line x1="50" y1="260" x2="50" y2="280" />
-        <line x1="100" y1="260" x2="100" y2="280" />
-        <line x1="150" y1="260" x2="150" y2="280" />
-        <line x1="200" y1="260" x2="200" y2="280" />
+
+      {/* sun glow */}
+      <circle cx="120" cy="80" r="50" fill="#f3deaa" opacity="0.55" />
+      <circle cx="120" cy="80" r="22" fill="#c08c4a" opacity="0.65" />
+
+      {/* clouds */}
+      <g fill="#f5efe1" opacity="0.65">
+        <ellipse cx="220" cy="60" rx="34" ry="5" />
+        <ellipse cx="260" cy="68" rx="22" ry="4" />
+        <ellipse cx="350" cy="50" rx="28" ry="5" />
+        <ellipse cx="400" cy="78" rx="20" ry="3.5" />
       </g>
-      {/* town */}
+
+      {/* distant mountain ridges */}
+      <path d="M0 170 L40 130 L80 150 L130 110 L180 145 L230 115 L280 145 L320 120 L370 150 L420 130 L470 145 L500 138 L500 220 L0 220 Z" fill="url(#mission-far-mtn)" opacity="0.5" />
+      <path d="M0 190 L50 160 L100 180 L160 145 L210 175 L270 150 L320 175 L380 152 L430 175 L500 160 L500 240 L0 240 Z" fill="#5f7549" opacity="0.75" />
+      {/* mid hill */}
+      <path d="M0 220 L70 195 L150 215 L230 185 L310 215 L390 195 L470 218 L500 210 L500 270 L0 270 Z" fill="#465938" opacity="0.85" />
+
+      {/* tree band on hills */}
+      <g fill="#3b4d2a" opacity="0.7">
+        <path d="M30 220 q3 -10 6 0" />
+        <path d="M44 218 q3 -12 6 0" />
+        <path d="M82 215 q3 -11 6 0" />
+        <path d="M170 212 q3 -10 6 0" />
+        <path d="M250 205 q3 -12 6 0" />
+        <path d="M330 215 q3 -10 6 0" />
+        <path d="M412 210 q3 -11 6 0" />
+      </g>
+
+      {/* bridge across river */}
+      <g>
+        {/* stone arches */}
+        <path d="M40 260 q24 -22 48 0 q24 -22 48 0 q24 -22 48 0 L184 268 L40 268 Z" fill="#bca27c" stroke="#7a4a1f" strokeWidth="1.2" />
+        {/* stone texture */}
+        <g stroke="#7a4a1f" strokeWidth="0.4" opacity="0.55" fill="none">
+          <line x1="50" y1="252" x2="58" y2="252" />
+          <line x1="68" y1="246" x2="78" y2="246" />
+          <line x1="96" y1="252" x2="106" y2="252" />
+          <line x1="120" y1="246" x2="130" y2="246" />
+          <line x1="148" y1="252" x2="158" y2="252" />
+        </g>
+        {/* roadway */}
+        <rect x="40" y="240" width="144" height="4" fill="#a16a35" />
+        {/* underside shadow */}
+        <path d="M40 268 q24 -22 48 0 q24 -22 48 0 q24 -22 48 0" fill="none" stroke="#3b2618" strokeWidth="0.6" opacity="0.5" />
+      </g>
+
+      {/* town buildings */}
       <g>
         {/* church */}
-        <rect x="240" y="200" width="40" height="60" fill="#a16a35" />
-        <polygon points="240,200 260,170 280,200" fill="#75694d" />
-        <rect x="255" y="175" width="10" height="20" fill="#75694d" />
-        <polygon points="255,175 260,165 265,175" fill="#1b2f37" />
+        <rect x="235" y="195" width="44" height="68" fill="#b97a3d" />
+        <polygon points="235,195 257,165 279,195" fill="#5b3a1c" />
+        <rect x="253" y="170" width="8" height="22" fill="#5b3a1c" />
+        <polygon points="253,170 257,158 261,170" fill="#1b1208" />
+        <rect x="251" y="158" width="1.2" height="6" fill="#1b1208" />
+        {/* church windows */}
+        <g fill="#f5efe1">
+          <rect x="245" y="215" width="6" height="14" rx="3" />
+          <rect x="263" y="215" width="6" height="14" rx="3" />
+        </g>
+        {/* clock */}
+        <circle cx="257" cy="190" r="3" fill="#f5efe1" stroke="#5b3a1c" strokeWidth="0.5" />
+
         {/* houses */}
-        <rect x="290" y="220" width="35" height="40" fill="#c08c4a" />
-        <polygon points="290,220 308,205 325,220" fill="#75694d" />
-        <rect x="335" y="225" width="30" height="35" fill="#a16a35" />
-        <polygon points="335,225 350,212 365,225" fill="#75694d" />
-        <rect x="375" y="215" width="38" height="45" fill="#c08c4a" />
-        <polygon points="375,215 394,200 413,215" fill="#75694d" />
-        {/* windows */}
+        <rect x="288" y="220" width="38" height="44" fill="#c08c4a" />
+        <polygon points="288,220 307,200 326,220" fill="#5b3a1c" />
+        <rect x="290" y="200" width="2" height="6" fill="#5b3a1c" />
+
+        <rect x="334" y="230" width="32" height="34" fill="#a16a35" />
+        <polygon points="334,230 350,215 366,230" fill="#5b3a1c" />
+
+        <rect x="372" y="215" width="42" height="48" fill="#c08c4a" />
+        <polygon points="372,215 393,198 414,215" fill="#5b3a1c" />
+        <rect x="374" y="198" width="2" height="8" fill="#5b3a1c" />
+
+        <rect x="420" y="225" width="32" height="38" fill="#a16a35" />
+        <polygon points="420,225 436,210 452,225" fill="#5b3a1c" />
+
+        {/* window grid */}
         <g fill="#f3ead2">
-          <rect x="298" y="235" width="6" height="8" />
-          <rect x="312" y="235" width="6" height="8" />
-          <rect x="345" y="238" width="5" height="7" />
-          <rect x="355" y="238" width="5" height="7" />
-          <rect x="382" y="230" width="6" height="8" />
-          <rect x="396" y="230" width="6" height="8" />
+          <rect x="294" y="232" width="5" height="6" />
+          <rect x="304" y="232" width="5" height="6" />
+          <rect x="294" y="244" width="5" height="6" />
+          <rect x="304" y="244" width="5" height="6" />
+          <rect x="314" y="232" width="5" height="6" />
+          <rect x="314" y="244" width="5" height="6" />
+
+          <rect x="340" y="240" width="5" height="6" />
+          <rect x="350" y="240" width="5" height="6" />
+          <rect x="356" y="240" width="5" height="6" />
+
+          <rect x="378" y="227" width="5" height="7" />
+          <rect x="388" y="227" width="5" height="7" />
+          <rect x="398" y="227" width="5" height="7" />
+          <rect x="378" y="240" width="5" height="7" />
+          <rect x="388" y="240" width="5" height="7" />
+          <rect x="398" y="240" width="5" height="7" />
+
+          <rect x="426" y="236" width="4" height="6" />
+          <rect x="436" y="236" width="4" height="6" />
+          <rect x="446" y="236" width="4" height="6" />
         </g>
       </g>
-      {/* trees */}
-      <g fill="#465938" opacity="0.9">
-        <path d="M20 240 q4 -28 8 0" />
-        <path d="M35 245 q5 -34 10 0" />
-        <path d="M425 235 q5 -32 10 0" />
-        <path d="M445 240 q4 -28 8 0" />
-        <path d="M465 245 q4 -28 8 0" />
+
+      {/* trees foreground */}
+      <g fill="#465938">
+        <g className="sway-a" style={{ transformOrigin: '24px 248px' }}>
+          <path d="M20 248 q4 -32 8 0 z" />
+        </g>
+        <g className="sway-b" style={{ transformOrigin: '38px 252px' }}>
+          <path d="M34 252 q5 -38 10 0 z" />
+        </g>
+        <g className="sway-a" style={{ transformOrigin: '462px 248px' }}>
+          <path d="M458 248 q4 -32 8 0 z" />
+        </g>
+        <g className="sway-b" style={{ transformOrigin: '478px 252px' }}>
+          <path d="M474 252 q5 -38 10 0 z" />
+        </g>
       </g>
+
       {/* river */}
-      <path d="M0 300 Q120 280 240 295 T500 290 L500 400 L0 400 Z" fill="url(#mission-river)" />
-      <path d="M40 320 Q140 305 240 315 T480 315" fill="none" stroke="#cddbe0" strokeWidth="1" opacity="0.7" />
-      <path d="M20 340 Q150 325 260 335 T490 335" fill="none" stroke="#cddbe0" strokeWidth="1" opacity="0.5" />
+      <path d="M0 310 Q120 286 240 302 T500 296 L500 400 L0 400 Z" fill="url(#mission-river)" />
+      {/* river highlights — animated */}
+      <path d="M40 326 Q140 310 240 320 T480 320" fill="none" stroke="#cddbe0" strokeWidth="1" opacity="0.7" className="current-slow" />
+      <path d="M20 346 Q150 332 260 342 T490 342" fill="none" stroke="#cddbe0" strokeWidth="0.8" opacity="0.5" className="current" />
+      {/* ripples */}
+      <g fill="none" stroke="#cddbe0" strokeWidth="0.5" opacity="0.5">
+        <ellipse cx="110" cy="340" rx="14" ry="2" />
+        <ellipse cx="320" cy="335" rx="14" ry="2" />
+        <ellipse cx="430" cy="350" rx="14" ry="2" />
+      </g>
+      {/* sun glint */}
+      <ellipse cx="240" cy="315" rx="40" ry="3" fill="#f3deaa" opacity="0.45" />
     </svg>
   )
 }
 
 function TimelineRiver({ eras }: { eras: typeof ERAS }) {
+  // pine tree silhouette
+  const tree = (x: number, y: number, h: number, sway: 'a' | 'b' = 'a', opacity = 0.85, color = '#465938') => (
+    <g
+      transform={`translate(${x} ${y})`}
+      className={sway === 'a' ? 'sway-a' : 'sway-b'}
+      style={{ transformOrigin: `${x}px ${y}px` }}
+    >
+      <path d={`M0 0 L-2 ${-h * 0.25} L2 ${-h * 0.25} Z`} fill={color} opacity={opacity} />
+      <path d={`M0 ${-h * 0.2} L-${h * 0.18} ${-h * 0.5} L${h * 0.18} ${-h * 0.5} Z`} fill={color} opacity={opacity} />
+      <path d={`M0 ${-h * 0.4} L-${h * 0.24} ${-h * 0.75} L${h * 0.24} ${-h * 0.75} Z`} fill={color} opacity={opacity} />
+      <path d={`M0 ${-h * 0.6} L-${h * 0.3} ${-h} L${h * 0.3} ${-h} Z`} fill={color} opacity={opacity} />
+      <line x1="0" y1="-2" x2="0" y2={-h * 0.25} stroke={color} strokeWidth="1.2" />
+    </g>
+  )
+
   return (
     <div className="relative">
       {/* flowing river backdrop */}
       <svg viewBox="0 0 1200 360" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full" aria-hidden>
         <defs>
           <linearGradient id="tl-river" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#8aaab5" />
-            <stop offset="100%" stopColor="#3b6877" />
+            <stop offset="0%" stopColor="#a4bcc4" />
+            <stop offset="50%" stopColor="#6d8d97" />
+            <stop offset="100%" stopColor="#2e525e" />
+          </linearGradient>
+          <linearGradient id="tl-sky" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#f5efe1" stopOpacity="0" />
+            <stop offset="100%" stopColor="#e2d6b2" stopOpacity="0.5" />
           </linearGradient>
         </defs>
-        {/* meandering river */}
-        <path d="M0 200 Q150 140 320 200 T640 220 T960 200 T1200 240 L1200 360 L0 360 Z" fill="url(#tl-river)" opacity="0.6" />
-        <path d="M0 220 Q150 160 320 220 T640 240 T960 220 T1200 260" fill="none" stroke="#cddbe0" strokeWidth="1" opacity="0.5" />
-        <path d="M0 240 Q150 180 320 240 T640 260 T960 240 T1200 280" fill="none" stroke="#cddbe0" strokeWidth="1" opacity="0.4" />
-        {/* pine trees scattered */}
-        <g fill="#465938" opacity="0.85">
-          <path d="M70 200 q4 -28 8 0 z" />
-          <path d="M90 195 q5 -35 10 0 z" />
-          <path d="M275 180 q5 -36 10 0 z" />
-          <path d="M540 200 q5 -35 10 0 z" />
-          <path d="M820 195 q5 -34 10 0 z" />
-          <path d="M1100 165 q5 -36 10 0 z" />
-          <path d="M1130 200 q4 -28 8 0 z" />
+
+        {/* warm sky/grass tone */}
+        <rect width="1200" height="200" fill="url(#tl-sky)" />
+
+        {/* far hills */}
+        <path d="M0 195 L80 175 L160 185 L240 165 L320 180 L400 165 L480 178 L560 168 L640 180 L720 165 L800 178 L880 168 L960 180 L1040 168 L1120 178 L1200 170 L1200 215 L0 215 Z" fill="#7a9162" opacity="0.4" />
+
+        {/* riverbanks (grass-edge) */}
+        <path d="M0 198 Q150 138 320 198 T640 218 T960 198 T1200 238 L1200 260 L0 260 Z" fill="#7a9162" opacity="0.55" />
+
+        {/* meandering river — main body */}
+        <path d="M0 210 Q150 150 320 210 T640 230 T960 210 T1200 250 L1200 360 L0 360 Z" fill="url(#tl-river)" opacity="0.85" />
+
+        {/* river highlight strokes (animated current) */}
+        <path d="M0 230 Q150 170 320 230 T640 250 T960 230 T1200 270" fill="none" stroke="#cddbe0" strokeWidth="1" opacity="0.55" className="current" />
+        <path d="M0 250 Q150 190 320 250 T640 270 T960 250 T1200 290" fill="none" stroke="#cddbe0" strokeWidth="1" opacity="0.4" className="current-slow" />
+        <path d="M0 270 Q150 210 320 270 T640 290 T960 270 T1200 310" fill="none" stroke="#a4bcc4" strokeWidth="0.8" opacity="0.4" />
+
+        {/* ripples — scattered ellipses */}
+        <g fill="none" stroke="#cddbe0" strokeWidth="0.5" opacity="0.45">
+          <ellipse cx="180" cy="240" rx="14" ry="2" />
+          <ellipse cx="460" cy="260" rx="14" ry="2" />
+          <ellipse cx="780" cy="252" rx="14" ry="2" />
+          <ellipse cx="1100" cy="298" rx="14" ry="2" />
         </g>
-        {/* small rowboat with 3 figures */}
-        <g transform="translate(1010 240)">
-          <path d="M-30 0 q30 14 60 0 L20 8 L-20 8 Z" fill="#75694d" />
-          <circle cx="-12" cy="-6" r="3" fill="#3b3528" />
-          <circle cx="0" cy="-7" r="3" fill="#3b3528" />
-          <circle cx="12" cy="-6" r="3" fill="#3b3528" />
-          <rect x="-13" y="-3" width="6" height="6" fill="#a16a35" />
-          <rect x="-1" y="-4" width="6" height="7" fill="#a16a35" />
-          <rect x="11" y="-3" width="6" height="6" fill="#a16a35" />
+
+        {/* reeds on banks */}
+        <g stroke="#5f7549" strokeWidth="1" fill="none" opacity="0.6">
+          <g className="sway-a" style={{ transformOrigin: '50px 210px' }}>
+            <line x1="50" y1="210" x2="48" y2="194" />
+            <line x1="54" y1="210" x2="56" y2="192" />
+            <line x1="58" y1="210" x2="56" y2="198" />
+          </g>
+          <g className="sway-b" style={{ transformOrigin: '440px 226px' }}>
+            <line x1="440" y1="226" x2="438" y2="208" />
+            <line x1="444" y1="226" x2="446" y2="210" />
+          </g>
+          <g className="sway-a" style={{ transformOrigin: '880px 218px' }}>
+            <line x1="876" y1="218" x2="874" y2="200" />
+            <line x1="880" y1="218" x2="882" y2="198" />
+            <line x1="884" y1="218" x2="882" y2="204" />
+          </g>
+        </g>
+
+        {/* pine trees — left bank cluster */}
+        {tree(60, 200, 32, 'a')}
+        {tree(82, 198, 44, 'b')}
+        {tree(106, 196, 36, 'a', 0.8)}
+        {tree(132, 200, 28, 'b', 0.75)}
+        {tree(260, 188, 48, 'a')}
+        {tree(286, 192, 32, 'b', 0.85)}
+        {tree(530, 200, 42, 'a')}
+        {tree(556, 204, 30, 'b', 0.75)}
+        {tree(820, 198, 40, 'a')}
+        {tree(846, 196, 50, 'b')}
+        {tree(872, 200, 32, 'a', 0.8)}
+        {tree(1090, 170, 46, 'a')}
+        {tree(1118, 172, 38, 'b', 0.85)}
+        {tree(1144, 168, 50, 'a')}
+
+        {/* small birds far away */}
+        <g stroke="#3b2618" strokeWidth="1" fill="none" opacity="0.6">
+          <path d="M650 140 q3 -3 6 0 q3 -3 6 0" />
+          <path d="M720 130 q2.5 -2.5 5 0 q2.5 -2.5 5 0" />
+          <path d="M780 145 q2 -2 4 0 q2 -2 4 0" />
+        </g>
+
+        {/* bobbing rowboat with 3 figures */}
+        <g className="bob" transform="translate(1000 250)" style={{ transformOrigin: '1000px 256px' }}>
+          {/* shadow */}
+          <ellipse cx="0" cy="12" rx="34" ry="3" fill="#1b2f37" opacity="0.2" />
+          {/* hull */}
+          <path d="M-32 0 Q-30 10 -18 12 L18 12 Q30 10 32 0 Z" fill="#7a4a1f" />
+          <path d="M-32 0 Q-30 10 -18 12 L18 12 Q30 10 32 0" fill="none" stroke="#3b2618" strokeWidth="1" />
+          {/* plank */}
+          <line x1="-30" y1="2" x2="30" y2="2" stroke="#3b2618" strokeWidth="0.6" opacity="0.6" />
+          {/* figures */}
+          <g>
+            <circle cx="-14" cy="-9" r="3.5" fill="#3b2618" />
+            <path d="M-18 -3 q4 -3 8 0 L-12 6 L-16 6 Z" fill="#a16a35" />
+            <circle cx="0" cy="-10" r="3.5" fill="#3b2618" />
+            <path d="M-4 -4 q4 -3 8 0 L2 6 L-2 6 Z" fill="#c08c4a" />
+            <circle cx="14" cy="-9" r="3.5" fill="#3b2618" />
+            <path d="M10 -3 q4 -3 8 0 L16 6 L12 6 Z" fill="#a16a35" />
+          </g>
+          {/* oars */}
+          <line x1="-22" y1="-2" x2="-32" y2="6" stroke="#5b3a1c" strokeWidth="1.2" strokeLinecap="round" />
+          <line x1="22" y1="-2" x2="32" y2="6" stroke="#5b3a1c" strokeWidth="1.2" strokeLinecap="round" />
+          {/* wake */}
+          <path d="M-44 14 q4 -3 10 0" fill="none" stroke="#cddbe0" strokeWidth="0.8" opacity="0.7" />
+          <path d="M-50 18 q4 -3 8 0" fill="none" stroke="#cddbe0" strokeWidth="0.6" opacity="0.5" />
         </g>
       </svg>
 
-      {/* era nodes */}
+      {/* era nodes — staggered drop on reveal */}
       <div className="reveal relative grid grid-cols-1 gap-y-12 pt-2 md:grid-cols-5 md:gap-x-2 md:pt-12">
         {eras.map((era, i) => (
           <div
             key={era.range}
-            className={`relative px-3 ${i % 2 === 1 ? 'md:mt-24' : ''}`}
+            className={`stagger-child relative px-3 ${i % 2 === 1 ? 'md:mt-24' : ''}`}
+            style={{ ['--i' as string]: i }}
           >
-            {/* pin */}
+            {/* pin with subtle drop shadow */}
             <div className="mb-3 flex items-center gap-2">
-              <svg viewBox="0 0 16 24" className="h-5 w-3.5 text-[#5f7549]" aria-hidden>
-                <path d="M8 0 C3.5 0 0 3.5 0 8 C0 13 8 24 8 24 C8 24 16 13 16 8 C16 3.5 12.5 0 8 0 Z" fill="currentColor" />
+              <svg viewBox="0 0 16 26" className="h-6 w-4 drop-shadow-[0_3px_3px_rgba(34,29,22,0.25)]" aria-hidden>
+                <path d="M8 0 C3.5 0 0 3.5 0 8 C0 14 8 26 8 26 C8 26 16 14 16 8 C16 3.5 12.5 0 8 0 Z" fill="#5f7549" />
                 <circle cx="8" cy="8" r="3" fill="#f5efe1" />
+                <circle cx="8" cy="8" r="1.5" fill="#465938" />
               </svg>
               <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#75694d]">{era.range}</span>
             </div>

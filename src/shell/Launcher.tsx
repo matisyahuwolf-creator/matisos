@@ -11,9 +11,7 @@ import {
 } from '../lib/weather'
 
 // Pixel-recreated workshop scene — no image dependency.
-// 1448:1086 reference aspect; everything sized in cqw so the scene scales
-// proportionally as the viewport changes.
-const ASPECT = 1448 / 1086
+// Sized in cqw so the scene scales proportionally as the viewport changes.
 
 type Suggestion = { name: string; why: string }
 type Suggestions = { vibe: string; suggestions: Suggestion[]; fetchedAt: number }
