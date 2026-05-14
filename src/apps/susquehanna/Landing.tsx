@@ -85,6 +85,15 @@ const SCOPED_STYLES = `
 
 export default function Landing({ onClose }: { onClose: () => void }) {
   const [submitted, setSubmitted] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
+  const [chatPrompt, setChatPrompt] = useState<string | null>(null)
+
+  const openDemo = () => {
+    setChatPrompt(
+      "Show me a live demo of what a Susquehanna chatbot would feel like on my restaurant's site. Pretend you're the bot for a local NEPA spot.",
+    )
+    setChatOpen(true)
+  }
 
   useEffect(() => {
     const root = document.getElementById('susq-landing')
@@ -181,7 +190,19 @@ export default function Landing({ onClose }: { onClose: () => void }) {
               Susquehanna is building an infrastructure of growth for the small businesses of Northeastern Pennsylvania &mdash; putting frontier AI in the hands of the dental offices, auto shops, salons, restaurants, and family practices that hold this region together. One business at a time, until the whole region is moving forward.
             </p>
 
-            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <button
+                onClick={openDemo}
+                className="group inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 font-medium text-[#221d16] transition"
+                style={{ background: 'linear-gradient(135deg, #f0e9d8 0%, #cddbe0 50%, #a8b888 100%)', boxShadow: '0 8px 20px -10px rgba(58,104,119,0.4)' }}
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3b6877] opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[#3b6877]" />
+                </span>
+                Try a live demo
+                <svg className="h-4 w-4 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
+              </button>
               <a href="#susq-contact" className="btn-primary inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 font-medium">
                 Start a conversation
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
@@ -190,6 +211,9 @@ export default function Landing({ onClose }: { onClose: () => void }) {
                 See what we build
               </a>
             </div>
+            <p className="mt-3 text-sm text-[#75694d]">
+              <span className="serif italic">Live demo</span> is the actual AI we'd put on your site — try asking it anything.
+            </p>
           </div>
 
           {/* scenario card */}
@@ -306,6 +330,142 @@ export default function Landing({ onClose }: { onClose: () => void }) {
                 <span className="rounded bg-[#221d16]/30 px-2.5 py-1 text-[#f5efe1]/90 backdrop-blur-sm">NEPA, 2026</span>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* history timeline — what NEPA built before, what we build now */}
+      <section id="susq-history" className="relative z-10 overflow-hidden">
+        <div className="topo absolute inset-0 -z-10 opacity-60" />
+        <div className="mx-auto max-w-7xl px-6 py-28 md:py-36">
+          <div className="reveal mx-auto max-w-3xl text-center">
+            <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-[#5f7549]">An unbroken thread</p>
+            <h2 className="serif text-balance text-4xl font-medium leading-[1.05] tracking-tight text-[#221d16] md:text-5xl">
+              Every era of this region<br />was built <span className="text-[#3b6877]">by the people who lived in it.</span>
+            </h2>
+            <p className="text-pretty mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-[#3b3528]">
+              Along the Susquehanna, every generation has had its infrastructure. Canals to move coal. Rails to move steel. Switchboards, then highways, then fiber. We're standing on the same banks, picking up the same job: build the rails that the next century of NEPA business runs on.
+            </p>
+          </div>
+
+          {/* the river of time */}
+          <div className="reveal relative mt-20">
+            {/* horizontal flowing line — desktop */}
+            <svg viewBox="0 0 1200 80" className="absolute left-0 right-0 top-12 hidden h-20 w-full md:block" preserveAspectRatio="none" aria-hidden>
+              <path d="M0 40 Q150 10 300 40 T600 40 T900 40 T1200 40" fill="none" stroke="#4a7c8c" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+              <path d="M0 50 Q150 25 300 50 T600 50 T900 50 T1200 50" fill="none" stroke="#7a9162" strokeWidth="1.5" strokeLinecap="round" opacity="0.3" />
+            </svg>
+
+            <div className="grid grid-cols-1 gap-12 md:grid-cols-5 md:gap-4">
+              {[
+                {
+                  era: '1830s',
+                  title: 'The canals',
+                  body: 'The Delaware & Hudson, the North Branch — anthracite floated south. The first regional infrastructure.',
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M3 14 Q6 11 9 14 T15 14 T21 14" />
+                      <path d="M5 17 L7 14 L17 14 L19 17 Z" />
+                      <line x1="9" y1="14" x2="9" y2="8" />
+                      <path d="M9 8 L13 11 L9 11 Z" />
+                    </svg>
+                  ),
+                },
+                {
+                  era: '1880s',
+                  title: 'Anthracite',
+                  body: 'Scranton, Wilkes-Barre, Hazleton — the hard coal that powered the country was dug right here.',
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M4 18 L8 10 L14 8 L20 14 L18 19 L6 20 Z" />
+                      <path d="M9 13 L13 12" />
+                    </svg>
+                  ),
+                },
+                {
+                  era: '1920s',
+                  title: 'The railroads',
+                  body: 'The DL&W, the Lehigh Valley, Steamtown. Tracks meant access — to markets, to opportunity, to the world.',
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <rect x="5" y="6" width="14" height="10" rx="1.5" />
+                      <circle cx="9" cy="18" r="1.5" />
+                      <circle cx="15" cy="18" r="1.5" />
+                      <line x1="3" y1="20" x2="21" y2="20" />
+                      <line x1="9" y1="9" x2="15" y2="9" />
+                    </svg>
+                  ),
+                },
+                {
+                  era: '1950s',
+                  title: 'Manufacturing',
+                  body: 'Textile mills, silk factories, steel finishing. Main Streets were full because the work was here.',
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M3 20 L3 12 L9 14 L9 10 L15 12 L15 8 L21 10 L21 20 Z" />
+                      <line x1="6" y1="20" x2="6" y2="16" />
+                      <line x1="12" y1="20" x2="12" y2="16" />
+                      <line x1="18" y1="20" x2="18" y2="16" />
+                    </svg>
+                  ),
+                },
+                {
+                  era: '2026',
+                  title: 'AI infrastructure',
+                  body: 'The work of this generation. Built here, owned here, lifting every Main Street together.',
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <circle cx="12" cy="12" r="2" />
+                      <circle cx="4" cy="6" r="1.5" />
+                      <circle cx="20" cy="6" r="1.5" />
+                      <circle cx="4" cy="18" r="1.5" />
+                      <circle cx="20" cy="18" r="1.5" />
+                      <line x1="6" y1="7" x2="10.5" y2="11" />
+                      <line x1="18" y1="7" x2="13.5" y2="11" />
+                      <line x1="6" y1="17" x2="10.5" y2="13" />
+                      <line x1="18" y1="17" x2="13.5" y2="13" />
+                    </svg>
+                  ),
+                  current: true,
+                },
+              ].map((node) => (
+                <div key={node.era} className="relative flex flex-col items-center text-center">
+                  <div
+                    className={`relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-2 ${
+                      node.current
+                        ? 'border-[#3b6877] bg-[#1b2f37] text-[#cddbe0] shadow-[0_10px_24px_-8px_rgba(46,82,94,0.6)]'
+                        : 'border-[#cdbf9f] bg-[#fffaee] text-[#465938]'
+                    }`}
+                  >
+                    {node.current && (
+                      <span className="absolute inset-0 animate-ping rounded-full bg-[#3b6877] opacity-25" />
+                    )}
+                    <div className="relative h-7 w-7">{node.icon}</div>
+                  </div>
+                  <div
+                    className={`mt-4 font-mono text-[12px] uppercase tracking-[0.18em] ${
+                      node.current ? 'text-[#3b6877]' : 'text-[#75694d]'
+                    }`}
+                  >
+                    {node.era}
+                  </div>
+                  <div className="serif mt-1 text-xl text-[#221d16]">{node.title}</div>
+                  <p className="mt-2 max-w-[200px] text-sm leading-relaxed text-[#3b3528]">{node.body}</p>
+                  {node.current && (
+                    <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#a8b888]/30 px-3 py-1 text-[10.5px] font-medium uppercase tracking-[0.18em] text-[#465938]">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#5f7549]" />
+                      You are here
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="reveal mt-20 text-center">
+            <p className="serif mx-auto max-w-3xl text-balance text-2xl italic leading-[1.35] text-[#3b6877] md:text-3xl">
+              "We don't see ourselves as a company. We see ourselves as the next link in a 200-year chain — built by people who chose to stay."
+            </p>
           </div>
         </div>
       </section>
@@ -475,13 +635,13 @@ export default function Landing({ onClose }: { onClose: () => void }) {
                 Every small business here deserves modern tools. Restaurants are the wedge: they sit at the heart of every Main Street, they live and die by missed calls and full tables, and the work is concrete enough to ship in weeks.
               </p>
               <p className="text-pretty mt-4 text-lg leading-relaxed text-[#3b3528]">
-                For our first restaurant partners, we're focused on two things &mdash; a modern website and an AI customer-service chatbot. Once we're running with enough kitchens, we expand out: dental, auto, salons &mdash; the same playbook, the same region.
+                For our first restaurant partners, we're focused on three things &mdash; a modern website, an AI customer-service chatbot, and a missed-call rescue. Once we're running with enough kitchens, we expand out: dental, auto, salons &mdash; the same playbook, the same region.
               </p>
             </div>
 
-            <div className="reveal grid grid-cols-1 gap-5 sm:grid-cols-2 md:col-span-7">
-              <div className="card rounded-2xl p-7">
-                <div className="mb-5 flex items-center gap-3">
+            <div className="reveal grid grid-cols-1 gap-5 sm:grid-cols-2 md:col-span-7 lg:grid-cols-3">
+              <div className="card rounded-2xl p-6 lg:col-span-1 sm:col-span-2 lg:row-start-1">
+                <div className="mb-4 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#8aaab5] bg-[#cddbe0]">
                     <svg className="h-5 w-5 text-[#3b6877]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="4" width="18" height="14" rx="2" />
@@ -491,14 +651,14 @@ export default function Landing({ onClose }: { onClose: () => void }) {
                   </div>
                   <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#75694d]">Offering / 01</span>
                 </div>
-                <h3 className="serif text-2xl leading-tight text-[#221d16]">Modern restaurant websites</h3>
+                <h3 className="serif text-xl leading-tight text-[#221d16]">Modern restaurant website</h3>
                 <p className="mt-3 text-sm leading-relaxed text-[#3b3528]">
-                  Built for how people actually find restaurants in 2026. Mobile-fast, search-optimized for &ldquo;near me,&rdquo; menu front-and-center, and ready to capture bookings the moment someone lands.
+                  Mobile-fast, &ldquo;near me&rdquo; SEO, menu front-and-center, and ready to capture bookings the moment someone lands.
                 </p>
               </div>
 
-              <div className="card rounded-2xl p-7">
-                <div className="mb-5 flex items-center gap-3">
+              <div className="card rounded-2xl p-6">
+                <div className="mb-4 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#7a9162]/60 bg-[#a8b888]/30">
                     <svg className="h-5 w-5 text-[#465938]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -506,9 +666,26 @@ export default function Landing({ onClose }: { onClose: () => void }) {
                   </div>
                   <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#75694d]">Offering / 02</span>
                 </div>
-                <h3 className="serif text-2xl leading-tight text-[#221d16]">Customer-service chatbots</h3>
+                <h3 className="serif text-xl leading-tight text-[#221d16]">Customer-service chatbot</h3>
                 <p className="mt-3 text-sm leading-relaxed text-[#3b3528]">
-                  An AI agent trained on your restaurant &mdash; hours, menu, allergens, reservation policy. Answering questions on your site and capturing leads when you're closed. In your voice, every time.
+                  Trained on your hours, menu, allergens, reservation policy. Answers in your voice. Captures leads when you're closed.
+                </p>
+              </div>
+
+              <div className="card rounded-2xl p-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#a16a35]/60 bg-[#c89761]/20">
+                    <svg className="h-5 w-5 text-[#a16a35]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                      <line x1="13" y1="3" x2="19" y2="9" />
+                      <line x1="19" y1="3" x2="13" y2="9" />
+                    </svg>
+                  </div>
+                  <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#75694d]">Offering / 03</span>
+                </div>
+                <h3 className="serif text-xl leading-tight text-[#221d16]">Missed-call rescue</h3>
+                <p className="mt-3 text-sm leading-relaxed text-[#3b3528]">
+                  Every call you don't catch gets an AI text in five seconds: &ldquo;Sorry we missed you &mdash; can we book you for tonight?&rdquo; Captures revenue that's leaking right now.
                 </p>
               </div>
             </div>
@@ -516,32 +693,92 @@ export default function Landing({ onClose }: { onClose: () => void }) {
         </div>
       </section>
 
-      {/* pilot offer */}
-      <section className="relative z-10">
+      {/* charter members */}
+      <section id="susq-charter" className="relative z-10">
         <div className="mx-auto max-w-7xl px-6 pt-24 md:pt-28">
           <div className="relative overflow-hidden rounded-3xl bg-[#1b2f37] p-10 text-[#f5efe1] md:p-14">
-            <svg className="pointer-events-none absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 800 300">
+            <svg className="pointer-events-none absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 800 400" aria-hidden>
               <path d="M0 80 Q200 40 400 70 T800 60" fill="none" stroke="#8aaab5" strokeWidth="1" opacity="0.25" />
               <path d="M0 130 Q200 90 400 120 T800 110" fill="none" stroke="#8aaab5" strokeWidth="1" opacity="0.18" />
               <path d="M0 200 Q200 160 400 180 T800 170" fill="none" stroke="#a8b888" strokeWidth="1" opacity="0.18" />
               <path d="M0 260 Q200 220 400 240 T800 230" fill="none" stroke="#a8b888" strokeWidth="1" opacity="0.12" />
+              <path d="M0 320 Q200 280 400 300 T800 290" fill="none" stroke="#a8b888" strokeWidth="1" opacity="0.1" />
             </svg>
 
-            <div className="relative grid grid-cols-1 items-center gap-8 md:grid-cols-12">
-              <div className="md:col-span-8">
-                <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-[#8aaab5]">For our first ten restaurants</p>
-                <h2 className="serif text-balance text-3xl font-medium leading-tight md:text-4xl">
-                  A free pilot for the first ten NEPA restaurants we work with.
+            <div className="relative grid grid-cols-1 items-start gap-10 md:grid-cols-12">
+              <div className="md:col-span-7">
+                <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.22em] text-[#8aaab5]">Charter members</p>
+                <h2 className="serif text-balance text-3xl font-medium leading-tight md:text-5xl">
+                  The first ten businesses<br />building this together.
                 </h2>
-                <p className="mt-4 max-w-2xl leading-relaxed text-[#cddbe0]/90">
-                  One small, useful AI tool &mdash; reservation capture, a voice agent, after-hours SMS &mdash; built for your restaurant at no cost. We earn the long-term work by proving the value first. If the pilot doesn't save you real time, you owe us nothing.
+                <p className="mt-5 max-w-2xl leading-relaxed text-[#cddbe0]/90">
+                  We're looking for ten NEPA restaurants to charter the cooperative. Free first build &mdash; modern site, customer-service chatbot, missed-call rescue &mdash; in exchange for one thing: you help us prove that this can work here. Your name on the page. Your story in the playbook. The first link in the chain.
                 </p>
+
+                <ul className="mt-7 space-y-3 text-[15px] text-[#cddbe0]/90">
+                  <li className="flex items-start gap-3">
+                    <span className="mt-2 inline-block h-px w-3 bg-[#a8b888]" />
+                    <span>Free first build, no contract, no risk</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-2 inline-block h-px w-3 bg-[#a8b888]" />
+                    <span>Founding-member rates locked in for the cooperative, forever</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-2 inline-block h-px w-3 bg-[#a8b888]" />
+                    <span>Your input shapes what every NEPA business gets next</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-2 inline-block h-px w-3 bg-[#a8b888]" />
+                    <span>If it doesn't save you real time in 30 days, you owe nothing</span>
+                  </li>
+                </ul>
               </div>
-              <div className="md:col-span-4 md:text-right">
-                <a href="#susq-contact" className="inline-flex items-center gap-2 rounded-full bg-[#f5efe1] px-6 py-3.5 font-medium text-[#1b2f37] transition hover:bg-[#f0e9d8]">
-                  Claim a pilot
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
-                </a>
+
+              {/* Network counter */}
+              <div className="md:col-span-5">
+                <div className="rounded-2xl border border-[#8aaab5]/30 bg-[#0d1f25]/60 p-7 backdrop-blur-sm">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#8aaab5]">Membership</p>
+                  <div className="mt-3 flex items-baseline gap-2">
+                    <span className="serif text-7xl font-medium text-[#f5efe1]">1</span>
+                    <span className="serif text-3xl text-[#8aaab5]">/ 10</span>
+                  </div>
+                  <p className="mt-1 text-[13px] text-[#cddbe0]/70">charter spots claimed</p>
+
+                  {/* dots row */}
+                  <div className="mt-5 flex gap-1.5">
+                    {Array.from({ length: 10 }).map((_, i) => {
+                      const filled = i < 1
+                      return (
+                        <span
+                          key={i}
+                          className={`h-2 flex-1 rounded-full ${
+                            filled ? 'bg-[#a8b888]' : 'bg-[#8aaab5]/20'
+                          }`}
+                          aria-hidden
+                        />
+                      )
+                    })}
+                  </div>
+
+                  <a
+                    href="#susq-contact"
+                    className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#f5efe1] px-6 py-3.5 font-medium text-[#1b2f37] transition hover:bg-[#f0e9d8]"
+                  >
+                    Become a charter member
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
+                  </a>
+                  <button
+                    onClick={openDemo}
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#8aaab5]/40 px-6 py-3 text-[14px] font-medium text-[#cddbe0] transition hover:bg-[#f5efe1]/5"
+                  >
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#a8b888] opacity-60" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-[#a8b888]" />
+                    </span>
+                    Talk to the AI first
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -631,7 +868,12 @@ export default function Landing({ onClose }: { onClose: () => void }) {
       </footer>
 
       {/* Live AI chat — both info assistant and product demo */}
-      <ChatWidget />
+      <ChatWidget
+        open={chatOpen}
+        onOpenChange={setChatOpen}
+        initialPrompt={chatPrompt}
+        onPromptConsumed={() => setChatPrompt(null)}
+      />
     </div>
   )
 }

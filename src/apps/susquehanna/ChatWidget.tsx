@@ -14,14 +14,41 @@ const WELCOME: Msg = {
     "Hi — I'm Susquehanna's assistant. I can answer questions about what we build, or **act as a live demo** of the kind of chatbot we'd put on your restaurant's site. What would you like to start with?",
 }
 
-export default function ChatWidget() {
-  const [open, setOpen] = useState(false)
+type Props = {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  initialPrompt?: string | null
+  onPromptConsumed?: () => void
+}
+
+export default function ChatWidget({
+  open: controlledOpen,
+  onOpenChange,
+  initialPrompt,
+  onPromptConsumed,
+}: Props = {}) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setInternalOpen(next)
+    onOpenChange?.(next)
+  }
+
   const [messages, setMessages] = useState<Msg[]>([WELCOME])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const messagesRef = useRef(messages)
+  const loadingRef = useRef(loading)
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
+  useEffect(() => {
+    loadingRef.current = loading
+  }, [loading])
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -31,23 +58,36 @@ export default function ChatWidget() {
 
   useEffect(() => {
     if (open) {
-      // small delay so the panel mount animation can settle
       const t = setTimeout(() => inputRef.current?.focus(), 200)
       return () => clearTimeout(t)
     }
   }, [open])
 
+  // Auto-send an externally provided prompt when the widget opens (e.g. hero "Try a demo" CTA)
+  useEffect(() => {
+    if (open && initialPrompt && !loadingRef.current) {
+      const text = initialPrompt
+      // small delay so the panel renders before the message appears
+      const t = setTimeout(() => {
+        send(text)
+        onPromptConsumed?.()
+      }, 250)
+      return () => clearTimeout(t)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialPrompt])
+
   async function send(text: string) {
     const content = text.trim()
-    if (!content || loading) return
+    if (!content || loadingRef.current) return
     setError(null)
-    const next: Msg[] = [...messages, { role: 'user', content }]
+    const next: Msg[] = [...messagesRef.current, { role: 'user', content }]
     setMessages(next)
     setInput('')
     setLoading(true)
     try {
       // strip the WELCOME message — server doesn't need it
-      const history = next.filter((m) => m.role !== 'assistant' || next.indexOf(m) > 0)
+      const history = next.filter((m, i) => !(m.role === 'assistant' && i === 0 && m === WELCOME))
       const r = await fetch('/api/susquehanna-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -110,7 +150,7 @@ export default function ChatWidget() {
     <>
       {/* Floating launcher button */}
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(!open)}
         aria-label={open ? 'Close chat' : 'Open chat with Susquehanna'}
         className="fixed bottom-5 right-5 z-[55] flex h-14 w-14 items-center justify-center rounded-full text-[#f5efe1] shadow-[0_14px_32px_-10px_rgba(46,82,94,0.6)] transition hover:scale-[1.04] active:scale-[0.98]"
         style={{ background: 'linear-gradient(160deg, #3b6877 0%, #2e525e 60%, #5f7549 100%)' }}
